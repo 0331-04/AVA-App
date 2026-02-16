@@ -1,39 +1,43 @@
 from ultralytics import YOLO
+import cv2
 
-# Load your trained model (IMPORTANT PATH)
+# Load trained model
 model = YOLO("runs/detect/train/weights/best.pt")
 
-# Put your test image path here
+# Use ORIGINAL image from valid/images (NOT predict folder)
 image_path = "valid/images/0263_JPEG.rf.8e2274f81f9b29118a34a7fae33773c6.jpg"
 
+# Load image
+image = cv2.imread(image_path)
+
+if image is None:
+    print("Image not found. Check path.")
+    exit()
+
+height, width, _ = image.shape
+total_image_area = height * width
+
+# Run prediction
 results = model(image_path)
-
-vehicle_area = 0
-damage_area = 0
-
 result = results[0]
 
+damage_area = 0
+
 for box in result.boxes:
-    cls_id = int(box.cls[0])
     x1, y1, x2, y2 = box.xyxy[0]
 
-    width = x2 - x1
-    height = y2 - y1
-    area = width * height
+    box_width = float(x2 - x1)
+    box_height = float(y2 - y1)
 
-    print("Detected class ID:", cls_id)
+    area = box_width * box_height
+    damage_area += area
 
-    # CHANGE THIS if vehicle is not class 0
-    if cls_id == 0:
-        vehicle_area = area
-    else:
-        damage_area += area
+# Convert to float
+damage_area = float(damage_area)
 
-if vehicle_area > 0:
-    damage_percent = (damage_area / vehicle_area) * 100
-else:
-    damage_percent = 0
+# Calculate percentage
+damage_percent = (damage_area / total_image_area) * 100
 
-print("\nVehicle Area:", vehicle_area)
+print("\nTotal Image Area:", total_image_area)
 print("Damage Area:", damage_area)
 print("Damage Percentage: {:.2f}%".format(damage_percent))
