@@ -5,7 +5,7 @@ import cv2
 model = YOLO("runs/detect/train/weights/best.pt")
 
 # Use ORIGINAL image from valid/images (NOT predict folder)
-image_path = "valid/images/0263_JPEG.rf.8e2274f81f9b29118a34a7fae33773c6.jpg"
+image_path = "valid/images/0157_jpeg.rf.630aac1d763628af05f11241b15cd8ef.jpg"
 
 # Load image
 image = cv2.imread(image_path)
@@ -21,6 +21,8 @@ total_image_area = height * width
 results = model(image_path)
 result = results[0]
 
+print("Number of boxes detected:", len(result.boxes))
+
 damage_area = 0
 
 for box in result.boxes:
@@ -30,6 +32,8 @@ for box in result.boxes:
     box_height = float(y2 - y1)
 
     area = box_width * box_height
+    print("Box Area:", area)
+
     damage_area += area
 
 # Convert to float
