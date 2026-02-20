@@ -5,7 +5,7 @@ import cv2
 model = YOLO("runs/detect/train/weights/best.pt")
 
 # Use ORIGINAL image from valid/images (NOT predict folder)
-image_path = "valid/images/0157_jpeg.rf.630aac1d763628af05f11241b15cd8ef.jpg"
+image_path = "valid/images/1318_jpeg.rf.600b2960a686a44be375834cab8adfb6.jpg"
 
 # Load image
 image = cv2.imread(image_path)

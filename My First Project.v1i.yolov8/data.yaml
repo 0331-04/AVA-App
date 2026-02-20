@@ -3,11 +3,11 @@ val: ../valid/images
 test: ../test/images
 
 nc: 4
-names: ['broken-light', 'broken_glass', 'dent', 'scratch']
+names: ['broken_glass', 'broken_light', 'dent', 'scrach']
 
 roboflow:
   workspace: dulaj-5pnag
-  project: my-first-project-nmmse
-  version: 1
+  project: damage-images
+  version: 2
   license: Private
-  url: https://app.roboflow.com/dulaj-5pnag/my-first-project-nmmse/1
+  url: https://app.roboflow.com/dulaj-5pnag/damage-images/2
