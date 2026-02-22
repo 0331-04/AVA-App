@@ -88,7 +88,19 @@ function Dashboard() {
 /* KPI Widget Component */
 function Widget({ title, value }) {
   return (
-    <div style={styles.widget}>
+    <div
+      style={styles.widget}
+      onMouseEnter={(e) =>
+        Object.assign(e.currentTarget.style, styles.widgetHover)
+      }
+      onMouseLeave={(e) =>
+        Object.assign(e.currentTarget.style, {
+          transform: "none",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+        })
+      }
+    >
+      <div style={styles.widgetAccent}></div>
       <p style={styles.widgetTitle}>{title}</p>
       <h2 style={styles.widgetValue}>{value}</h2>
     </div>
@@ -113,33 +125,44 @@ function statusStyle(status) {
 
 /* Styles */
 const styles = {
-  page: {
-    padding: "30px",
-    minHeight: "100vh",
-    background: "#f5f7fa",
-  },
-  heading: {
-    marginBottom: "25px",
-  },
-  widgets: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "20px",
-    marginBottom: "35px",
-  },
   widget: {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
+    position: "relative",
+    background: "#ffffff",
+    padding: "22px",
+    borderRadius: "14px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+    cursor: "default",
   },
+
+  widgetAccent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "6px",
+    background: "linear-gradient(90deg, #00e0ff, #2c5364)",
+    borderTopLeftRadius: "14px",
+    borderTopRightRadius: "14px",
+  },
+
   widgetTitle: {
+    marginTop: "12px",
     fontSize: "14px",
     color: "#777",
+    letterSpacing: "0.3px",
   },
+
   widgetValue: {
-    marginTop: "10px",
+    marginTop: "12px",
+    fontSize: "28px",
+    fontWeight: "600",
     color: "#203a43",
+  },
+
+  widgetHover: {
+    transform: "translateY(-6px)",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
   },
   tableContainer: {
     background: "#fff",
