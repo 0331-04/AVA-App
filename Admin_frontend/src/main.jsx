@@ -8,3 +8,10 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes load {
+  from { width: 0%; }
+  to { width: 100%; }
+}`;
+document.head.appendChild(style);

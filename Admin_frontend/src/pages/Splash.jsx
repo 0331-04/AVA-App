@@ -1,29 +1,31 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/ava-logo-full.png";
 
 function Splash() {
   const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate("/");
-    }, 2000); // 2 seconds splash
+      navigate("/login");
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
     <div style={styles.container}>
-      <div style={styles.content}>
-        <h1 style={styles.logo}>AVA</h1>
-        <p style={styles.tagline}>Where every claim meets clarity</p>
-
-        <div style={styles.loaderContainer}>
-          <div style={styles.loader}></div>
-        </div>
-
-        <p style={styles.loadingText}>Loading</p>
+      {/* White Circle with Logo */}
+      <div style={styles.circle}>
+        <img src={logo} alt="AVA Logo" style={styles.logo} />
       </div>
+
+      {/* Loading bar */}
+      <div style={styles.loaderBg}>
+        <div style={styles.loader}></div>
+      </div>
+
+      <p style={styles.loadingText}>Loading...</p>
     </div>
   );
 }
@@ -32,41 +34,43 @@ const styles = {
   container: {
     height: "100vh",
     width: "100vw",
-    background: "#0b4fa2",
+    background: "#0a4fb3", // SAME blue tone as your image
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  circle: {
+    width: "260px",
+    height: "220px",
+    borderRadius: "50%",
+    background: "#ffffff",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    color: "#fff",
-  },
-  content: {
-    textAlign: "center",
+    marginBottom: "50px",
   },
   logo: {
-    fontSize: "48px",
-    fontWeight: "bold",
-    marginBottom: "10px",
+    width: "180px",
+    height: "180px",
+    
   },
-  tagline: {
-    fontSize: "16px",
-    marginBottom: "40px",
-    opacity: 0.9,
-  },
-  loaderContainer: {
-    width: "200px",
+  loaderBg: {
+    width: "220px",
     height: "6px",
-    background: "rgba(255,255,255,0.3)",
+    background: "rgba(255,255,255,0.4)",
     borderRadius: "10px",
     overflow: "hidden",
-    margin: "0 auto",
   },
   loader: {
-    width: "50%",
     height: "100%",
+    width: "100%",
     background: "#00e0ff",
-    animation: "load 2s linear",
+    animation: "load 2.5s linear",
   },
   loadingText: {
-    marginTop: "12px",
+    marginTop: "14px",
+    color: "#ffffff",
     fontSize: "14px",
     opacity: 0.9,
   },
