@@ -8,7 +8,7 @@ function Splash() {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate("/login");
-    }, 2500);
+    }, 4500);
 
     return () => clearTimeout(timer);
   }, [navigate]);
@@ -34,7 +34,7 @@ const styles = {
   container: {
     height: "100vh",
     width: "100vw",
-    background: "#0a4fb3", // SAME blue tone as your image
+    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
@@ -51,8 +51,8 @@ const styles = {
     marginBottom: "50px",
   },
   logo: {
-    width: "180px",
-    height: "180px",
+    width: "250px",
+    height: "250px",
     
   },
   loaderBg: {
@@ -63,17 +63,20 @@ const styles = {
     overflow: "hidden",
   },
   loader: {
-    height: "100%",
-    width: "100%",
-    background: "#00e0ff",
-    animation: "load 2.5s linear",
+  height: "100%",
+  width: "100%",
+  background: "linear-gradient(90deg, #00e0ff, #66f0ff, #00e0ff)",
+  backgroundSize: "200px 100%",
+  animation: "load 3.5s ease-in-out forwards, shimmer 1.2s infinite",
   },
+
   loadingText: {
     marginTop: "14px",
     color: "#ffffff",
     fontSize: "14px",
     opacity: 0.9,
   },
+  
 };
 
 export default Splash;

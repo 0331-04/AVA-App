@@ -1,24 +1,20 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
-    // 🔹 MOCK login (backend later)
+    // Mock login (no validation, no errors)
     setTimeout(() => {
-      if (email === "agent@test.com" && password === "1234") {
-        console.log("Login success");
-      } else {
-        setError("Invalid email or password");
-      }
-      setLoading(false);
+      navigate("/dashboard");
     }, 1500);
   };
 
@@ -47,8 +43,6 @@ function Login() {
             required
           />
 
-          {error && <p style={styles.error}>{error}</p>}
-
           <button
             type="submit"
             style={{
@@ -68,13 +62,13 @@ function Login() {
 
 const styles = {
   page: {
-    height: "100vh",
-    width: "100vw",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-  },
+  position: "fixed",      
+  inset: 0,               
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+},
   card: {
     background: "#ffffff",
     padding: "40px",
@@ -111,12 +105,6 @@ const styles = {
     background: "#203a43",
     color: "#fff",
     marginTop: "10px",
-  },
-  error: {
-    color: "#c0392b",
-    fontSize: "13px",
-    marginTop: "-5px",
-    textAlign: "left",
   },
 };
 

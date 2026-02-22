@@ -11,7 +11,24 @@ createRoot(document.getElementById('root')).render(
 const style = document.createElement("style");
 style.innerHTML = `
 @keyframes load {
-  from { width: 0%; }
-  to { width: 100%; }
-}`;
+  0% {
+    width: 0%;
+  }
+  60% {
+    width: 85%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+`;
 document.head.appendChild(style);
