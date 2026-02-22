@@ -1,8 +1,8 @@
 
-My First Project - v1 2026-02-01 10:56am
+damage images - v2 2026-02-16 11:22am
 ==============================
 
-This dataset was exported via roboflow.com on February 1, 2026 at 5:28 AM GMT
+This dataset was exported via roboflow.com on February 16, 2026 at 5:57 AM GMT
 
 Roboflow is an end-to-end computer vision platform that helps you
 * collaborate with your team on computer vision projects
@@ -17,12 +17,11 @@ visit https://github.com/roboflow/notebooks
 
 To find over 100k other datasets and pre-trained models, visit https://universe.roboflow.com
 
-The dataset includes 95 images.
-Objects are annotated in YOLOv8 format.
+The dataset includes 723 images.
+Vehicles are annotated in YOLOv8 format.
 
 The following pre-processing was applied to each image:
 * Auto-orientation of pixel data (with EXIF-orientation stripping)
-* Resize to 512x512 (Stretch)
 
 No image augmentation techniques were applied.
 
