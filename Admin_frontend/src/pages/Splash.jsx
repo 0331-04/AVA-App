@@ -8,7 +8,7 @@ function Splash() {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate("/login");
-    }, 4500);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
@@ -67,7 +67,7 @@ const styles = {
   width: "100%",
   background: "linear-gradient(90deg, #00e0ff, #66f0ff, #00e0ff)",
   backgroundSize: "200px 100%",
-  animation: "load 3.5s ease-in-out forwards, shimmer 1.2s infinite",
+  animation: "load 5s ease-in-out forwards, shimmer 1.5s infinite",
   },
 
   loadingText: {
