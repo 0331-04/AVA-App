@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Python Image Quality Service
+  quality-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ava-quality-service
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ava-network
+
+  # Node.js Backend (optional - for testing)
+  # Uncomment if you want to run the full stack
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: ava-backend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #     - QUALITY_SERVICE_URL=http://quality-service:5001
+  #   depends_on:
+  #     - quality-service
+  #   networks:
+  #     - ava-network
+
+networks:
+  ava-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local
