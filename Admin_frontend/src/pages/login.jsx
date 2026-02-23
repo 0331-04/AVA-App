@@ -27,7 +27,7 @@ function Login() {
         <form onSubmit={handleLogin} style={styles.form}>
           <input
             type="email"
-            placeholder="Agent Email"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={styles.input}

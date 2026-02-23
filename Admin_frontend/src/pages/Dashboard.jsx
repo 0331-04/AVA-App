@@ -1,5 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
+
+import {
+  MdDescription,
+  MdHourglassTop,
+  MdCheckCircle,
+} from "react-icons/md";
 
 /* 🔢 Animated Counter */
 function AnimatedNumber({ value, duration = 1200 }) {
@@ -25,21 +32,10 @@ function AnimatedNumber({ value, duration = 1200 }) {
   return <span>{displayValue}</span>;
 }
 
-/* 📦 Widget */
+/* 📦 KPI Widget */
 function Widget({ title, value, icon }) {
   return (
-    <div
-      style={styles.widget}
-      onMouseEnter={(e) =>
-        Object.assign(e.currentTarget.style, styles.widgetHover)
-      }
-      onMouseLeave={(e) =>
-        Object.assign(e.currentTarget.style, {
-          transform: "none",
-          boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
-        })
-      }
-    >
+    <div style={styles.widget}>
       <div style={styles.widgetAccent} />
 
       <div style={styles.widgetHeader}>
@@ -54,155 +50,78 @@ function Widget({ title, value, icon }) {
   );
 }
 
-/* 🎯 Dashboard */
 function Dashboard() {
   const navigate = useNavigate();
 
   const claims = [
-    {
-    id: 101,
-    customer: "John Silva",
-    vehicle: "Toyota Corolla",
-    status: "Pending",
-    estimate: 120000,
-  },
-  {
-    id: 102,
-    customer: "Nimal Perera",
-    vehicle: "Honda Civic",
-    status: "Approved",
-    estimate: 85000,
-  },
-  {
-    id: 103,
-    customer: "Kasun Fernando",
-    vehicle: "Nissan X-Trail",
-    status: "Under Review",
-    estimate: 150000,
-  },
-  {
-    id: 104,
-    customer: "Amal Jayasinghe",
-    vehicle: "Suzuki Alto",
-    status: "Approved",
-    estimate: 45000,
-  },
-  {
-    id: 105,
-    customer: "Sachini Peris",
-    vehicle: "Toyota Aqua",
-    status: "Pending",
-    estimate: 98000,
-  },
-  {
-    id: 106,
-    customer: "Ruwan De Silva",
-    vehicle: "Mitsubishi Montero",
-    status: "Under Review",
-    estimate: 320000,
-  },
-  {
-    id: 107,
-    customer: "Tharindu Lakmal",
-    vehicle: "Honda Fit",
-    status: "Approved",
-    estimate: 76000,
-  },
-  {
-    id: 108,
-    customer: "Isuru Fernando",
-    vehicle: "Toyota Hilux",
-    status: "Pending",
-    estimate: 210000,
-  },
-  {
-    id: 109,
-    customer: "Dinuka Wijesinghe",
-    vehicle: "BMW 320i",
-    status: "Under Review",
-    estimate: 480000,
-  },
-  {
-    id: 110,
-    customer: "Shehani Gunasekara",
-    vehicle: "Kia Sportage",
-    status: "Approved",
-    estimate: 195000,
-  },
-  {
-    id: 111,
-    customer: "Chamod Fernando",
-    vehicle: "Nissan Leaf",
-    status: "Pending",
-    estimate: 110000,
-  },
-  {
-    id: 112,
-    customer: "Sahan Abeysekara",
-    vehicle: "Toyota Premio",
-    status: "Approved",
-    estimate: 135000,
-  },
-  {
-    id: 113,
-    customer: "Piumi Rathnayake",
-    vehicle: "Mazda Demio",
-    status: "Under Review",
-    estimate: 89000,
-  },
+    { id: 101, customer: "John Silva", vehicle: "Toyota Corolla", status: "Pending", estimate: 120000 },
+    { id: 102, customer: "Nimal Perera", vehicle: "Honda Civic", status: "Approved", estimate: 85000 },
+    { id: 103, customer: "Kasun Fernando", vehicle: "Nissan X-Trail", status: "Under Review", estimate: 150000 },
+    { id: 104, customer: "Amal Jayasinghe", vehicle: "Suzuki Alto", status: "Approved", estimate: 45000 },
+    { id: 105, customer: "Sachini Peris", vehicle: "Toyota Aqua", status: "Pending", estimate: 98000 },
+    { id: 106, customer: "Ruwan De Silva", vehicle: "Mitsubishi Montero", status: "Under Review", estimate: 320000 },
+    { id: 107, customer: "Tharindu Lakmal", vehicle: "Honda Fit", status: "Approved", estimate: 76000 },
+    { id: 108, customer: "Isuru Fernando", vehicle: "Toyota Hilux", status: "Pending", estimate: 210000 },
+    { id: 109, customer: "Dinuka Wijesinghe", vehicle: "BMW 320i", status: "Under Review", estimate: 480000 },
   ];
 
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.heading}>Admin Dashboard</h1>
+    <div style={styles.layout}>
+      <Sidebar />
 
-        <div style={styles.widgets}>
-          <Widget icon="📄" title="Total Claims" value={claims.length} />
-          <Widget icon="⏳" title="Pending Claims" value={claims.filter(c => c.status === "Pending").length} />
-          <Widget icon="✅" title="Approved Claims" value={claims.filter(c => c.status === "Approved").length} />
-        </div>
+      <main style={styles.content}>
+        <div style={styles.container}>
+          <h1 style={styles.heading}>Admin Dashboard</h1>
 
-        {/* Claims Table */}
-        <div style={styles.tableContainer}>
-          <h3>Recent Claims</h3>
+          {/* KPI Widgets */}
+          <div style={styles.widgets}>
+            <Widget title="Total Claims" value={claims.length} icon={<MdDescription />} />
+            <Widget title="Pending Claims" value={claims.filter(c => c.status === "Pending").length} icon={<MdHourglassTop />} />
+            <Widget title="Approved Claims" value={claims.filter(c => c.status === "Approved").length} icon={<MdCheckCircle />} />
+          </div>
 
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Claim ID</th>
-                <th style={styles.th}>Customer</th>
-                <th style={styles.th}>Vehicle</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Estimate</th>
-                <th style={styles.th}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {claims.map(c => (
-                <tr
-                  key={c.id}
-                  onMouseEnter={e => (e.currentTarget.style.background = styles.rowHover.background)}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
-                  <td style={styles.td}>{c.id}</td>
-                  <td style={styles.td}>{c.customer}</td>
-                  <td style={styles.td}>{c.vehicle}</td>
-                  <td style={styles.td}>
-                    <span style={statusStyle(c.status)}>{c.status}</span>
-                  </td>
-                  <td style={styles.td}>Rs. {c.estimate.toLocaleString()}</td>
-                  <td style={styles.td}>
-                    <button style={styles.viewBtn} onClick={() => navigate(`/claims/${c.id}`)}>
-                      View
-                    </button>
-                  </td>
+          {/* Claims Table */}
+          <div style={styles.tableContainer}>
+            <h3>Recent Claims</h3>
+
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Claim ID</th>
+                  <th style={styles.th}>Customer</th>
+                  <th style={styles.th}>Vehicle</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Estimate</th>
+                  <th style={styles.th}>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {claims.map(c => (
+                  <tr
+                    key={c.id}
+                    onMouseEnter={e => (e.currentTarget.style.background = styles.rowHover.background)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <td style={styles.td}>{c.id}</td>
+                    <td style={styles.td}>{c.customer}</td>
+                    <td style={styles.td}>{c.vehicle}</td>
+                    <td style={styles.td}>
+                      <span style={statusStyle(c.status)}>{c.status}</span>
+                    </td>
+                    <td style={styles.td}>Rs. {c.estimate.toLocaleString()}</td>
+                    <td style={styles.td}>
+                      <button style={styles.viewBtn} onClick={() => navigate(`/claims/${c.id}`)}>
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
         </div>
-      </div>
+      </main>
     </div>
   );
 }
@@ -223,21 +142,15 @@ function statusStyle(status) {
 
 /* 🎨 Styles */
 const styles = {
-  page: {
-    minHeight: "100vh",
+  layout: { display: "flex", minHeight: "100vh" },
+  content: {
+    flex: 1,
+    marginLeft: "220px",
     padding: "30px",
     background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
   },
-  container: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-  },
-  heading: {
-    color: "#fff",
-    marginBottom: "24px",
-    fontSize: "28px",
-    fontWeight: "600",
-  },
+  container: { maxWidth: "1200px", margin: "0 auto" },
+  heading: { color: "#fff", marginBottom: "24px", fontSize: "28px", fontWeight: "600" },
   widgets: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
@@ -263,29 +176,10 @@ const styles = {
     borderTopLeftRadius: "16px",
     borderTopRightRadius: "16px",
   },
-  widgetHeader: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: "12px",
-  },
-  widgetTitle: {
-    fontSize: "20px",
-    fontWeight: "700",
-    color: "#e6f6ff",
-  },
-  widgetIcon: {
-    fontSize: "24px",
-  },
-  widgetValue: {
-    fontSize: "36px",
-    fontWeight: "700",
-    marginTop: "10px",
-  },
-  widgetHover: {
-    transform: "translateY(-6px)",
-    boxShadow: "0 20px 45px rgba(0,0,0,0.35)",
-  },
+  widgetHeader: { display: "flex", justifyContent: "center", gap: "12px" },
+  widgetTitle: { fontSize: "20px", fontWeight: "700", color: "#e6f6ff" },
+  widgetIcon: { fontSize: "26px" },
+  widgetValue: { fontSize: "36px", fontWeight: "700", marginTop: "10px" },
   tableContainer: {
     background: "linear-gradient(135deg, #2a536b, #346c89)",
     padding: "22px",
@@ -293,22 +187,10 @@ const styles = {
     boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
     color: "#fff",
   },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    marginTop: "15px",
-  },
-  th: {
-    padding: "12px",
-    background: "rgba(255,255,255,0.12)",
-  },
-  td: {
-    padding: "12px",
-    borderBottom: "1px solid rgba(255,255,255,0.12)",
-  },
-  rowHover: {
-    background: "rgba(255,255,255,0.08)",
-  },
+  table: { width: "100%", borderCollapse: "collapse", marginTop: "15px" },
+  th: { padding: "12px", background: "rgba(255,255,255,0.12)" },
+  td: { padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.12)" },
+  rowHover: { background: "rgba(255,255,255,0.08)" },
   viewBtn: {
     padding: "6px 14px",
     borderRadius: "6px",
