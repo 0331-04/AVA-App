@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClaimDetails from "./pages/ClaimDetails";
 
+
+
 function App() {
   return (
     <BrowserRouter>
