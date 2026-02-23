@@ -1,149 +1,132 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
-import avaLogo from "../assets/ava-logo.png";
-import {
-  MdDashboard,
-  MdAssignment,
-  MdLogout,
-  MdChevronLeft,
-  MdChevronRight,
-} from "react-icons/md";
+import { useLocation, useNavigate } from "react-router-dom";
+import avaLogo from "../assets/ava-logo.png"; // make sure this path is correct
 
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
 
-  const menuItem = (label, icon, path) => (
-    <div
-      onClick={() => navigate(path)}
-      style={{
-        ...styles.menuItem,
-        ...(location.pathname === path ? styles.activeItem : {}),
-        justifyContent: collapsed ? "center" : "flex-start",
-      }}
-    >
-      <span style={styles.icon}>{icon}</span>
-      {!collapsed && <span>{label}</span>}
-    </div>
-  );
+  const isActive = (path) => {
+    if (path === "/claims") {
+      return location.pathname.startsWith("/claims");
+    }
+    return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    // frontend-only logout for now
+    localStorage.removeItem("auth");
+    navigate("/login");
+  };
 
   return (
-    <aside
-      style={{
-        ...styles.sidebar,
-        width: collapsed ? "70px" : "220px",
-      }}
-    >
-      {/* TOP */}
-      <div>
-        {/* Logo */}
-        <div style={styles.logoContainer}>
-          <img
-            src={avaLogo}
-            alt="AVA"
-            style={{
-              ...styles.logo,
-              width: collapsed ? "40px" : "90px",
-            }}
-          />
-        </div>
-
-        {/* Menu */}
-        <div style={styles.menu}>
-          {menuItem("Dashboard", <MdDashboard />, "/dashboard")}
-          {menuItem("Claims", <MdAssignment />, "/claims")}
-        </div>
+    <aside style={styles.sidebar}>
+      {/* Logo */}
+      <div style={styles.logoContainer}>
+        <img src={avaLogo} alt="AVA Logo" style={styles.logo} />
       </div>
 
-      {/* BOTTOM */}
-      <div>
-        <div
-          style={styles.menuItem}
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          <span style={styles.icon}>
-            {collapsed ? <MdChevronRight /> : <MdChevronLeft />}
-          </span>
-          {!collapsed && <span>Collapse</span>}
-        </div>
+      {/* Navigation */}
+      <nav style={styles.nav}>
+        <SidebarItem
+          label="Dashboard"
+          active={isActive("/dashboard")}
+          onClick={() => navigate("/dashboard")}
+        />
 
-        <div
-          style={styles.logout}
-          onClick={() => navigate("/login")}
-        >
-          <span style={styles.icon}>
-            <MdLogout />
-          </span>
-          {!collapsed && <span>Logout</span>}
-        </div>
+        <SidebarItem
+          label="Claims"
+          active={isActive("/claims")}
+          onClick={() => navigate("/claims")}
+        />
+      </nav>
+
+      {/* Logout */}
+      <div style={styles.logoutContainer}>
+        <button style={styles.logoutBtn} onClick={handleLogout}>
+          Logout
+        </button>
       </div>
     </aside>
   );
 }
 
+/* Sidebar item */
+function SidebarItem({ label, active, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        ...styles.item,
+        ...(active ? styles.activeItem : {}),
+      }}
+    >
+      {label}
+    </div>
+  );
+}
+
+/* Styles */
 const styles = {
   sidebar: {
-    height: "100vh",
+    width: "220px",
+    minHeight: "100vh",
+    background: "linear-gradient(180deg, #0f2027, #203a43)",
+    padding: "20px",
     position: "fixed",
     left: 0,
     top: 0,
-    background: "linear-gradient(180deg, #0f2027, #203a43, #2c5364)",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
-    padding: "20px 10px",
-    transition: "width 0.3s ease",
-    overflow: "hidden",
-    boxShadow: "4px 0 15px rgba(0,0,0,0.35)",
+    color: "#fff",
   },
+
   logoContainer: {
     display: "flex",
     justifyContent: "center",
-    marginBottom: "25px",
+    marginBottom: "40px",
   },
+
   logo: {
-    transition: "width 0.3s ease",
+    width: "140px",
+    objectFit: "contain",
   },
-  menu: {
+
+  nav: {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
+    flex: 1,
   },
-  menuItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px",
+
+  item: {
+    padding: "12px 16px",
     borderRadius: "10px",
     cursor: "pointer",
     fontSize: "15px",
     fontWeight: "500",
-    color: "#e6f6ff",
-    transition: "background 0.25s ease",
+    color: "#cfe9f5",
+    transition: "all 0.25s ease",
   },
+
   activeItem: {
-    background: "rgba(255,255,255,0.15)",
+    background: "rgba(0, 224, 255, 0.15)",
+    color: "#00e0ff",
     fontWeight: "600",
   },
-  icon: {
-    fontSize: "20px",
-    minWidth: "24px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+
+  logoutContainer: {
+    marginTop: "auto",
   },
-  logout: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px",
+
+  logoutBtn: {
+    width: "100%",
+    padding: "10px",
+    background: "rgba(255,255,255,0.08)",
+    border: "none",
     borderRadius: "10px",
+    color: "#fff",
     cursor: "pointer",
-    fontSize: "15px",
-    color: "#ffdddd",
-    background: "rgba(0,0,0,0.25)",
-    marginTop: "10px",
+    fontWeight: "500",
   },
 };
 
