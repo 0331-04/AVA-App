@@ -1,92 +1,32 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
-function Dashboard() {
-  const navigate = useNavigate();
+/* 🔢 Animated Counter */
+function AnimatedNumber({ value, duration = 1200 }) {
+  const [displayValue, setDisplayValue] = useState(0);
 
-  // Mock claim data
-  const claims = [
-    {
-      id: 101,
-      customer: "John Silva",
-      vehicle: "Toyota Corolla",
-      status: "Pending",
-      estimate: 120000,
-    },
-    {
-      id: 102,
-      customer: "Nimal Perera",
-      vehicle: "Honda Civic",
-      status: "Approved",
-      estimate: 85000,
-    },
-    {
-      id: 103,
-      customer: "Kasun Fernando",
-      vehicle: "Nissan X-Trail",
-      status: "Under Review",
-      estimate: 150000,
-    },
-  ];
+  useEffect(() => {
+    let start = 0;
+    const increment = value / (duration / 16);
 
-  return (
-  <div style={styles.page}>
-    <div style={styles.container}>
-      <h1 style={styles.heading}>Admin Dashboard</h1>
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= value) {
+        setDisplayValue(value);
+        clearInterval(timer);
+      } else {
+        setDisplayValue(Math.floor(start));
+      }
+    }, 16);
 
-      {/* KPI Widgets */}
-      <div style={styles.widgets}>
-        <Widget title="Total Claims" value={claims.length} />
-        <Widget title="Pending Claims" value={claims.filter(c => c.status === "Pending").length} />
-        <Widget title="Approved Claims" value={claims.filter(c => c.status === "Approved").length} />
-        <Widget
-          title="Total ML Estimate"
-          value={`Rs. ${claims.reduce((a, c) => a + c.estimate, 0).toLocaleString()}`}
-        />
-      </div>
+    return () => clearInterval(timer);
+  }, [value, duration]);
 
-      {/* Claims Table */}
-      <div style={styles.tableContainer}>
-        <h3>Recent Claims</h3>
-
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th>Claim ID</th>
-              <th>Customer</th>
-              <th>Vehicle</th>
-              <th>Status</th>
-              <th>ML Estimate</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {claims.map((c) => (
-              <tr key={c.id}>
-                <td>{c.id}</td>
-                <td>{c.customer}</td>
-                <td>{c.vehicle}</td>
-                <td><span style={statusStyle(c.status)}>{c.status}</span></td>
-                <td>Rs. {c.estimate.toLocaleString()}</td>
-                <td>
-                  <button
-                    style={styles.viewBtn}
-                    onClick={() => navigate(`/claims/${c.id}`)}
-                  >
-                    View
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-);
+  return <span>{displayValue}</span>;
 }
 
-/* KPI Widget Component */
-function Widget({ title, value }) {
+/* 📦 Widget */
+function Widget({ title, value, icon }) {
   return (
     <div
       style={styles.widget}
@@ -96,18 +36,178 @@ function Widget({ title, value }) {
       onMouseLeave={(e) =>
         Object.assign(e.currentTarget.style, {
           transform: "none",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
         })
       }
     >
-      <div style={styles.widgetAccent}></div>
-      <p style={styles.widgetTitle}>{title}</p>
-      <h2 style={styles.widgetValue}>{value}</h2>
+      <div style={styles.widgetAccent} />
+
+      <div style={styles.widgetHeader}>
+        <span style={styles.widgetIcon}>{icon}</span>
+        <p style={styles.widgetTitle}>{title}</p>
+      </div>
+
+      <h2 style={styles.widgetValue}>
+        <AnimatedNumber value={value} />
+      </h2>
     </div>
   );
 }
 
-/* Status badge colors */
+/* 🎯 Dashboard */
+function Dashboard() {
+  const navigate = useNavigate();
+
+  const claims = [
+    {
+    id: 101,
+    customer: "John Silva",
+    vehicle: "Toyota Corolla",
+    status: "Pending",
+    estimate: 120000,
+  },
+  {
+    id: 102,
+    customer: "Nimal Perera",
+    vehicle: "Honda Civic",
+    status: "Approved",
+    estimate: 85000,
+  },
+  {
+    id: 103,
+    customer: "Kasun Fernando",
+    vehicle: "Nissan X-Trail",
+    status: "Under Review",
+    estimate: 150000,
+  },
+  {
+    id: 104,
+    customer: "Amal Jayasinghe",
+    vehicle: "Suzuki Alto",
+    status: "Approved",
+    estimate: 45000,
+  },
+  {
+    id: 105,
+    customer: "Sachini Peris",
+    vehicle: "Toyota Aqua",
+    status: "Pending",
+    estimate: 98000,
+  },
+  {
+    id: 106,
+    customer: "Ruwan De Silva",
+    vehicle: "Mitsubishi Montero",
+    status: "Under Review",
+    estimate: 320000,
+  },
+  {
+    id: 107,
+    customer: "Tharindu Lakmal",
+    vehicle: "Honda Fit",
+    status: "Approved",
+    estimate: 76000,
+  },
+  {
+    id: 108,
+    customer: "Isuru Fernando",
+    vehicle: "Toyota Hilux",
+    status: "Pending",
+    estimate: 210000,
+  },
+  {
+    id: 109,
+    customer: "Dinuka Wijesinghe",
+    vehicle: "BMW 320i",
+    status: "Under Review",
+    estimate: 480000,
+  },
+  {
+    id: 110,
+    customer: "Shehani Gunasekara",
+    vehicle: "Kia Sportage",
+    status: "Approved",
+    estimate: 195000,
+  },
+  {
+    id: 111,
+    customer: "Chamod Fernando",
+    vehicle: "Nissan Leaf",
+    status: "Pending",
+    estimate: 110000,
+  },
+  {
+    id: 112,
+    customer: "Sahan Abeysekara",
+    vehicle: "Toyota Premio",
+    status: "Approved",
+    estimate: 135000,
+  },
+  {
+    id: 113,
+    customer: "Piumi Rathnayake",
+    vehicle: "Mazda Demio",
+    status: "Under Review",
+    estimate: 89000,
+  },
+  ];
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <h1 style={styles.heading}>Admin Dashboard</h1>
+
+        <div style={styles.widgets}>
+          <Widget icon="📄" title="Total Claims" value={claims.length} />
+          <Widget icon="⏳" title="Pending Claims" value={claims.filter(c => c.status === "Pending").length} />
+          <Widget icon="✅" title="Approved Claims" value={claims.filter(c => c.status === "Approved").length} />
+        </div>
+
+        {/* Claims Table */}
+        <div style={styles.tableContainer}>
+          <h3>Recent Claims</h3>
+
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Claim ID</th>
+                <th style={styles.th}>Customer</th>
+                <th style={styles.th}>Vehicle</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Estimate</th>
+                <th style={styles.th}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {claims.map(c => (
+                <tr
+                  key={c.id}
+                  onMouseEnter={e => (e.currentTarget.style.background = styles.rowHover.background)}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <td style={styles.td}>{c.id}</td>
+                  <td style={styles.td}>{c.customer}</td>
+                  <td style={styles.td}>{c.vehicle}</td>
+                  <td style={styles.td}>
+                    <span style={statusStyle(c.status)}>{c.status}</span>
+                  </td>
+                  <td style={styles.td}>Rs. {c.estimate.toLocaleString()}</td>
+                  <td style={styles.td}>
+                    <button style={styles.viewBtn} onClick={() => navigate(`/claims/${c.id}`)}>
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* 🎨 Status badge */
 function statusStyle(status) {
   return {
     padding: "6px 12px",
@@ -115,26 +215,44 @@ function statusStyle(status) {
     fontSize: "12px",
     color: "#fff",
     background:
-      status === "Approved"
-        ? "#27ae60"
-        : status === "Pending"
-        ? "#f39c12"
-        : "#2980b9",
+      status === "Approved" ? "#27ae60" :
+      status === "Pending" ? "#f39c12" :
+      "#2980b9",
   };
 }
 
-/* Styles */
+/* 🎨 Styles */
 const styles = {
+  page: {
+    minHeight: "100vh",
+    padding: "30px",
+    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+  },
+  container: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+  },
+  heading: {
+    color: "#fff",
+    marginBottom: "24px",
+    fontSize: "28px",
+    fontWeight: "600",
+  },
+  widgets: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: "20px",
+    marginBottom: "30px",
+  },
   widget: {
     position: "relative",
-    background: "#ffffff",
-    padding: "22px",
-    borderRadius: "14px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
-    transition: "transform 0.25s ease, box-shadow 0.25s ease",
-    cursor: "default",
+    background: "linear-gradient(135deg, #2b556e, #356b88)",
+    padding: "24px",
+    borderRadius: "16px",
+    boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
+    color: "#fff",
+    textAlign: "center",
   },
-
   widgetAccent: {
     position: "absolute",
     top: 0,
@@ -142,55 +260,62 @@ const styles = {
     width: "100%",
     height: "6px",
     background: "linear-gradient(90deg, #00e0ff, #2c5364)",
-    borderTopLeftRadius: "14px",
-    borderTopRightRadius: "14px",
+    borderTopLeftRadius: "16px",
+    borderTopRightRadius: "16px",
   },
-
+  widgetHeader: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: "12px",
+  },
   widgetTitle: {
-    marginTop: "12px",
-    fontSize: "14px",
-    color: "#777",
-    letterSpacing: "0.3px",
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "#e6f6ff",
   },
-
+  widgetIcon: {
+    fontSize: "24px",
+  },
   widgetValue: {
-    marginTop: "12px",
-    fontSize: "28px",
-    fontWeight: "600",
-    color: "#203a43",
+    fontSize: "36px",
+    fontWeight: "700",
+    marginTop: "10px",
   },
-
   widgetHover: {
     transform: "translateY(-6px)",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+    boxShadow: "0 20px 45px rgba(0,0,0,0.35)",
   },
   tableContainer: {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
+    background: "linear-gradient(135deg, #2a536b, #346c89)",
+    padding: "22px",
+    borderRadius: "16px",
+    boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
+    color: "#fff",
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
     marginTop: "15px",
   },
+  th: {
+    padding: "12px",
+    background: "rgba(255,255,255,0.12)",
+  },
+  td: {
+    padding: "12px",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+  },
+  rowHover: {
+    background: "rgba(255,255,255,0.08)",
+  },
   viewBtn: {
     padding: "6px 14px",
-    border: "none",
     borderRadius: "6px",
     background: "#203a43",
     color: "#fff",
+    border: "none",
     cursor: "pointer",
-  },
-  container: {
-  maxWidth: "1200px",     // keeps content neat
-  margin: "0 auto",       // centers horizontally
-  },
-  page: {
-  minHeight: "100vh",
-  padding: "30px",
-  background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
   },
 };
 
