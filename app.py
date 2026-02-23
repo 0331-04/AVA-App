@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-# Load model using correct relative path
+# Load model
 model = YOLO("My First Project.v1i.yolov8/runs/detect/train/weights/best.pt")
 
 UPLOAD_FOLDER = "uploads"
@@ -20,7 +20,7 @@ def analyze():
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
 
-    # Load image to calculate total area
+    # Load image
     image = cv2.imread(filepath)
     height, width, _ = image.shape
     total_image_area = height * width
@@ -30,18 +30,29 @@ def analyze():
     result = results[0]
 
     damage_area = 0
+    damage_counts = {}
 
     for box in result.boxes:
+        cls_id = int(box.cls[0])
+        class_name = model.names[cls_id]
+
         x1, y1, x2, y2 = box.xyxy[0]
-        damage_area += float((x2 - x1) * (y2 - y1))
+        area = float((x2 - x1) * (y2 - y1))
+        damage_area += area
+
+        # Count damage types
+        if class_name in damage_counts:
+            damage_counts[class_name] += 1
+        else:
+            damage_counts[class_name] = 1
 
     damage_percent = (damage_area / total_image_area) * 100
 
-    # Remove temp file
     os.remove(filepath)
 
     return jsonify({
-        "damage_percentage": round(damage_percent, 2)
+        "damage_percentage": round(damage_percent, 2),
+        "damage_counts": damage_counts
     })
 
 if __name__ == "__main__":
