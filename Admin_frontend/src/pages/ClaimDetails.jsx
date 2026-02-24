@@ -115,10 +115,17 @@ function ClaimDetails() {
             </ul>
 
             <textarea
-              placeholder="Reason for manual override (required if modified)"
-              value={overrideReason}
-              onChange={(e) => setOverrideReason(e.target.value)}
-              style={styles.textarea}
+                placeholder="Reason for manual override (required if estimate is modified)"
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                style={{
+                    marginTop: "14px",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    width: "100%",
+                    minHeight: "90px",
+                    border: "none",
+                }}
             />
           </Section>
 
