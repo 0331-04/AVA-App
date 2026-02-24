@@ -31,7 +31,7 @@ function ClaimDetails() {
 
     history: [
       { status: "Submitted", by: "Customer", date: "2026-02-10 09:14" },
-      { status: "ML Estimated", by: "AVA ML Engine", date: "2026-02-10 09:15" },
+      { status: "AI Estimate Generated", by: "AVA AI Engine", date: "2026-02-10 09:15" },
       { status: "Pending", by: "System", date: "2026-02-10 09:15" },
     ],
   };
@@ -46,14 +46,14 @@ function ClaimDetails() {
   const updateStatus = (newStatus) => {
     setStatus(newStatus);
     setHistory([
-      ...history,
-      {
-        status: newStatus,
-        by: "Agent",
-        date: new Date().toLocaleString(),
-      },
-    ]);
-  };
+    ...history,
+    {
+      status: newStatus,
+      by: "Agent",
+      date: new Date().toLocaleString(),
+    },
+  ]);
+};
 
   return (
     <div style={styles.layout}>
