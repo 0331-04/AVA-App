@@ -65,7 +65,9 @@ function ClaimDetails() {
             ← Back to Claims
           </button>
 
-          <h1 style={styles.heading}>Claim #{claim.id}</h1>
+          <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "24px" }}>
+            Claim #{claim.id}
+          </h1>
 
           {/* 🧾 INFO CARDS */}
           <div style={styles.cards}>
@@ -172,7 +174,9 @@ function ClaimDetails() {
 function Card({ title, children }) {
   return (
     <div style={styles.card}>
-      <h3>{title}</h3>
+      <h3 style={{ fontSize: "22px", marginBottom: "16px" }}>
+        {title}
+      </h3>
       {children}
     </div>
   );
@@ -218,7 +222,7 @@ const styles = {
     boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
   },
 
-  section: { marginTop: "30px" },
+  section: { marginTop: "40px" },
 
   images: {
     display: "grid",
@@ -246,7 +250,7 @@ const styles = {
 
   timeline: {
     marginTop: "15px",
-    borderLeft: "2px solid #00e0ff",
+    borderLeft: "3px solid #00e0ff",
     paddingLeft: "20px",
   },
   timelineItem: {
@@ -265,15 +269,15 @@ const styles = {
   timelineMeta: { fontSize: "12px", opacity: 0.8 },
 
   actions: {
-    marginTop: "30px",
+    marginTop: "40px",
     display: "flex",
-    gap: "15px",
+    gap: "18px",
   },
   approve: {
     background: "#27ae60",
     border: "none",
     color: "#fff",
-    padding: "10px 20px",
+    padding: "12px 24px",
     borderRadius: "8px",
     cursor: "pointer",
   },
