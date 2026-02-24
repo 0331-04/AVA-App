@@ -50,7 +50,7 @@ function Sidebar() {
   );
 }
 
-/* Sidebar item */
+
 function SidebarItem({ label, active, onClick }) {
   return (
     <div
@@ -65,7 +65,7 @@ function SidebarItem({ label, active, onClick }) {
   );
 }
 
-/* Styles */
+
 const styles = {
   sidebar: {
     width: "220px",
