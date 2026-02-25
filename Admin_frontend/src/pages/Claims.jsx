@@ -5,7 +5,6 @@ import Layout from "../components/Layout";
 function Claims() {
   const navigate = useNavigate();
 
-  // Dummy claims data
   const claims = [
     { id: 101, customer: "John Silva", vehicle: "Toyota Corolla", status: "Pending", estimate: 120000 },
     { id: 102, customer: "Nimal Perera", vehicle: "Honda Civic", status: "Approved", estimate: 85000 },
@@ -18,17 +17,17 @@ function Claims() {
     { id: 109, customer: "Dinuka Wijesinghe", vehicle: "BMW 320i", status: "Under Review", estimate: 480000 },
   ];
 
-  /* 🔹 Filters */
+  /* Filters */
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [vehicleFilter, setVehicleFilter] = useState("All");
   const [minEstimate, setMinEstimate] = useState("");
   const [maxEstimate, setMaxEstimate] = useState("");
 
-  /* 🔹 Sorting */
+  /* Sorting */
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  /* 🔹 Pagination */
+  /* Pagination */
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
@@ -41,7 +40,7 @@ function Claims() {
     });
   };
 
-  /* 🔹 Filter + Sort */
+  /* Filter + Sort */
   const processedClaims = [...claims]
     .filter((c) => {
       const matchesSearch =
@@ -86,7 +85,7 @@ function Claims() {
         : bVal.localeCompare(aVal);
     });
 
-  /* 🔹 Pagination */
+  /* Pagination slice */
   const totalPages = Math.ceil(processedClaims.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedClaims = processedClaims.slice(
@@ -96,13 +95,41 @@ function Claims() {
 
   const vehicles = ["All", ...new Set(claims.map((c) => c.vehicle))];
 
+  /* CSV Export */
+  const exportToCSV = () => {
+    const headers = ["Claim ID", "Customer", "Vehicle", "Status", "Estimate"];
+    const rows = processedClaims.map((c) => [
+      c.id,
+      c.customer,
+      c.vehicle,
+      c.status,
+      c.estimate,
+    ]);
+
+    const csvContent =
+      [headers, ...rows].map((e) => e.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "claims-export.csv";
+    link.click();
+  };
+
   return (
     <Layout>
       <div style={styles.content}>
         <div style={styles.container}>
-          <h1 style={styles.heading}>Claims</h1>
+          <div style={styles.headerRow}>
+            <h1 style={styles.heading}>Claims</h1>
+            <button style={styles.exportBtn} onClick={exportToCSV}>
+              Export CSV
+            </button>
+          </div>
 
-          {/* 🔍 Filters */}
+          {/* Filters */}
           <div style={styles.filters}>
             <input
               placeholder="Search"
@@ -164,7 +191,7 @@ function Claims() {
             />
           </div>
 
-          {/* 📋 Table */}
+          {/* Table */}
           <div style={styles.tableContainer}>
             <table style={styles.table}>
               <thead>
@@ -209,11 +236,9 @@ function Claims() {
               >
                 Previous
               </button>
-
               <span>
                 Page {currentPage} of {totalPages}
               </span>
-
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => p + 1)}
@@ -228,7 +253,6 @@ function Claims() {
   );
 }
 
-/* Status badge */
 function statusStyle(status) {
   return {
     padding: "4px 10px",
@@ -244,7 +268,6 @@ function statusStyle(status) {
   };
 }
 
-/* Styles */
 const styles = {
   content: {
     padding: "30px",
@@ -252,36 +275,42 @@ const styles = {
     minHeight: "100vh",
   },
   container: { maxWidth: "1200px", margin: "0 auto" },
-  heading: { color: "#fff", marginBottom: "20px", fontSize: "28px" },
-
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "16px",
+  },
+  heading: { color: "#fff", fontSize: "28px" },
+  exportBtn: {
+    padding: "10px 16px",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+  },
   filters: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: "12px",
     marginBottom: "20px",
   },
-
   input: {
     padding: "10px",
     borderRadius: "8px",
     border: "none",
   },
-
   tableContainer: {
     background: "linear-gradient(135deg, #2a536b, #346c89)",
     padding: "20px",
     borderRadius: "16px",
     color: "#fff",
   },
-
   table: { width: "100%", borderCollapse: "collapse" },
-
   pagination: {
     marginTop: "16px",
     display: "flex",
     justifyContent: "space-between",
   },
-
   viewBtn: {
     padding: "6px 14px",
     borderRadius: "6px",
