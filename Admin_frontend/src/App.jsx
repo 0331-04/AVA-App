@@ -1,17 +1,19 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import ClaimDetails from "./pages/ClaimDetails";
 import Claims from "./pages/Claims";
-import { Toaster } from "react-hot-toast";
-
-<Toaster position="top-right" />
-
+import ClaimDetails from "./pages/ClaimDetails";
 
 function App() {
   return (
-    <BrowserRouter>
+    <>
+      {/* Toast notifications */}
+      <Toaster position="top-right" />
+
+      {/* App Routes */}
       <Routes>
         <Route path="/" element={<Splash />} />
         <Route path="/login" element={<Login />} />
@@ -19,7 +21,7 @@ function App() {
         <Route path="/claims" element={<Claims />} />
         <Route path="/claims/:id" element={<ClaimDetails />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 

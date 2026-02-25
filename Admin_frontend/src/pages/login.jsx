@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -7,15 +8,17 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Mock login (no validation, no errors)
+    // Mock login + role assignment
     setTimeout(() => {
+      login(email);
       navigate("/dashboard");
-    }, 1500);
+    }, 1000);
   };
 
   return (
@@ -55,6 +58,13 @@ function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <p style={styles.hint}>
+          Try:
+          <br /> admin@ava.com
+          <br /> agent@ava.com
+          <br /> any other email → viewer
+        </p>
       </div>
     </div>
   );
@@ -62,17 +72,17 @@ function Login() {
 
 const styles = {
   page: {
-  position: "fixed",      
-  inset: 0,               
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-},
+    position: "fixed",
+    inset: 0,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+  },
   card: {
     background: "#ffffff",
     padding: "40px",
-    width: "360px",
+    width: "380px",
     borderRadius: "12px",
     boxShadow: "0 12px 35px rgba(0,0,0,0.25)",
     textAlign: "center",
@@ -105,6 +115,11 @@ const styles = {
     background: "#203a43",
     color: "#fff",
     marginTop: "10px",
+  },
+  hint: {
+    marginTop: "18px",
+    fontSize: "12px",
+    color: "#888",
   },
 };
 
