@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
+import { useAuth } from "../context/AuthContext";
 
 function Claims() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = user?.role;
 
   const claims = [
     { id: 101, customer: "John Silva", vehicle: "Toyota Corolla", status: "Pending", estimate: 120000 },
@@ -14,7 +17,6 @@ function Claims() {
     { id: 106, customer: "Ruwan De Silva", vehicle: "Mitsubishi Montero", status: "Under Review", estimate: 320000 },
     { id: 107, customer: "Tharindu Lakmal", vehicle: "Honda Fit", status: "Approved", estimate: 76000 },
     { id: 108, customer: "Isuru Fernando", vehicle: "Toyota Hilux", status: "Pending", estimate: 210000 },
-    { id: 109, customer: "Dinuka Wijesinghe", vehicle: "BMW 320i", status: "Under Review", estimate: 480000 },
   ];
 
   /* Filters */
@@ -24,28 +26,12 @@ function Claims() {
   const [minEstimate, setMinEstimate] = useState("");
   const [maxEstimate, setMaxEstimate] = useState("");
 
-  /* Sorting */
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-
-  /* Pagination */
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
-
   /* Bulk selection */
   const [selectedIds, setSelectedIds] = useState([]);
 
   const vehicles = ["All", ...new Set(claims.map((c) => c.vehicle))];
 
-  const handleSort = (key) => {
-    setSortConfig((prev) => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
-      }
-      return { key, direction: "asc" };
-    });
-  };
-
-  const processedClaims = [...claims].filter((c) => {
+  const filteredClaims = claims.filter((c) => {
     const matchesSearch =
       c.customer.toLowerCase().includes(search.toLowerCase()) ||
       c.vehicle.toLowerCase().includes(search.toLowerCase()) ||
@@ -59,34 +45,22 @@ function Claims() {
     return matchesSearch && matchesStatus && matchesVehicle && matchesMin && matchesMax;
   });
 
-  const totalPages = Math.ceil(processedClaims.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedClaims = processedClaims.slice(startIndex, startIndex + rowsPerPage);
-
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === paginatedClaims.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(paginatedClaims.map((c) => c.id));
-    }
-  };
-
   return (
     <Layout>
-      <div style={styles.content}>
+      <div style={styles.page}>
         <div style={styles.container}>
           <h1 style={styles.heading}>Claims</h1>
 
-          {/* Filters */}
+          {/* 🔍 Filters */}
           <div style={styles.filters}>
             <input
-              placeholder="Search claims..."
+              placeholder="Search by claim ID, customer, vehicle"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={styles.input}
@@ -105,32 +79,64 @@ function Claims() {
               ))}
             </select>
 
-            <input type="number" placeholder="Min Estimate" value={minEstimate} onChange={(e) => setMinEstimate(e.target.value)} style={styles.input} />
-            <input type="number" placeholder="Max Estimate" value={maxEstimate} onChange={(e) => setMaxEstimate(e.target.value)} style={styles.input} />
+            <input
+              type="number"
+              placeholder="Min Estimate"
+              value={minEstimate}
+              onChange={(e) => setMinEstimate(e.target.value)}
+              style={styles.input}
+            />
+
+            <input
+              type="number"
+              placeholder="Max Estimate"
+              value={maxEstimate}
+              onChange={(e) => setMaxEstimate(e.target.value)}
+              style={styles.input}
+            />
           </div>
+
+          {/* Bulk actions */}
+          {selectedIds.length > 0 && role !== "viewer" && (
+            <div style={styles.bulkBar}>
+              <span>{selectedIds.length} selected</span>
+              <button
+                disabled={role !== "admin"}
+                style={{
+                  ...styles.bulkBtn,
+                  opacity: role !== "admin" ? 0.5 : 1,
+                  cursor: role !== "admin" ? "not-allowed" : "pointer",
+                }}
+              >
+                Export Selected
+              </button>
+            </div>
+          )}
 
           {/* Table */}
           <div style={styles.tableContainer}>
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>
-                    <input type="checkbox" onChange={toggleSelectAll} />
-                  </th>
-                  <th onClick={() => handleSort("id")}>ID</th>
-                  <th onClick={() => handleSort("customer")}>Customer</th>
-                  <th onClick={() => handleSort("vehicle")}>Vehicle</th>
-                  <th onClick={() => handleSort("status")}>Status</th>
-                  <th onClick={() => handleSort("estimate")}>Estimate</th>
+                  <th></th>
+                  <th>Claim ID</th>
+                  <th>Customer</th>
+                  <th>Vehicle</th>
+                  <th>Status</th>
+                  <th>Estimate</th>
                   <th>Action</th>
                 </tr>
               </thead>
-
               <tbody>
-                {paginatedClaims.map((c) => (
-                  <tr key={c.id} style={styles.row}>
+                {filteredClaims.map((c) => (
+                  <tr key={c.id}>
                     <td>
-                      <input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => toggleSelect(c.id)} />
+                      <input
+                        type="checkbox"
+                        disabled={role === "viewer"}
+                        checked={selectedIds.includes(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                      />
                     </td>
                     <td>{c.id}</td>
                     <td>{c.customer}</td>
@@ -146,6 +152,14 @@ function Claims() {
                     </td>
                   </tr>
                 ))}
+
+                {filteredClaims.length === 0 && (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: "center", padding: "20px" }}>
+                      No claims found
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -155,31 +169,35 @@ function Claims() {
   );
 }
 
+/* Status badge */
 function statusStyle(status) {
   return {
     padding: "6px 14px",
     borderRadius: "20px",
-    fontSize: "13px",
+    fontSize: "12px",
     color: "#fff",
     background:
-      status === "Approved" ? "#27ae60" :
-      status === "Pending" ? "#f39c12" :
-      "#2980b9",
+      status === "Approved"
+        ? "#27ae60"
+        : status === "Pending"
+        ? "#f39c12"
+        : "#2980b9",
   };
 }
 
+/* Styles */
 const styles = {
-  content: {
+  page: {
     padding: "30px",
-    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
     minHeight: "100vh",
+    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
   },
   container: {
-    maxWidth: "1250px",
+    maxWidth: "1200px",
     margin: "0 auto",
+    color: "#fff",
   },
   heading: {
-    color: "#fff",
     fontSize: "30px",
     marginBottom: "20px",
   },
@@ -195,23 +213,29 @@ const styles = {
     border: "none",
     fontSize: "15px",
   },
+  bulkBar: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "15px",
+  },
+  bulkBtn: {
+    padding: "8px 18px",
+    borderRadius: "8px",
+    border: "none",
+  },
   tableContainer: {
     background: "linear-gradient(135deg, #2a536b, #346c89)",
-    padding: "24px",
-    borderRadius: "18px",
-    color: "#fff",
+    padding: "22px",
+    borderRadius: "16px",
+    boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
   },
   table: {
     width: "100%",
-    borderCollapse: "separate",
-    borderSpacing: "0 12px",
-  },
-  row: {
-    background: "rgba(255,255,255,0.05)",
+    borderCollapse: "collapse",
   },
   viewBtn: {
-    padding: "8px 18px",
-    borderRadius: "8px",
+    padding: "6px 14px",
+    borderRadius: "6px",
     border: "none",
     cursor: "pointer",
   },
