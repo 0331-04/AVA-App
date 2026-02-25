@@ -4,7 +4,9 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClaimDetails from "./pages/ClaimDetails";
 import Claims from "./pages/Claims";
+import { Toaster } from "react-hot-toast";
 
+<Toaster position="top-right" />
 
 
 function App() {
