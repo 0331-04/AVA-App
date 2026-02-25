@@ -23,25 +23,23 @@ function Claims() {
   const [statusFilter, setStatusFilter] = useState("All");
 
   /* 🔹 Sorting */
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   const handleSort = (key) => {
     setSortConfig((prev) => {
       if (prev.key === key) {
-        return {
-          key,
-          direction: prev.direction === "asc" ? "desc" : "asc",
-        };
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
       }
       return { key, direction: "asc" };
     });
   };
 
+  /* 🔹 Pagination */
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 5;
+
   /* 🔹 Filter + Sort */
-  const filteredClaims = [...claims]
+  const processedClaims = [...claims]
     .filter((c) => {
       const matchesSearch =
         c.customer.toLowerCase().includes(search.toLowerCase()) ||
@@ -70,6 +68,14 @@ function Claims() {
         : bVal.localeCompare(aVal);
     });
 
+  /* 🔹 Paginated slice */
+  const totalPages = Math.ceil(processedClaims.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedClaims = processedClaims.slice(
+    startIndex,
+    startIndex + rowsPerPage
+  );
+
   return (
     <Layout>
       <div style={styles.content}>
@@ -82,13 +88,19 @@ function Claims() {
               type="text"
               placeholder="Search by Claim ID, Customer, Vehicle"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               style={styles.search}
             />
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               style={styles.select}
             >
               <option value="All">All Status</option>
@@ -104,42 +116,34 @@ function Claims() {
               <thead>
                 <tr>
                   <th style={styles.th} onClick={() => handleSort("id")}>
-                    Claim ID {sortConfig.key === "id" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    Claim ID
                   </th>
                   <th style={styles.th} onClick={() => handleSort("customer")}>
-                    Customer {sortConfig.key === "customer" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    Customer
                   </th>
                   <th style={styles.th} onClick={() => handleSort("vehicle")}>
-                    Vehicle {sortConfig.key === "vehicle" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    Vehicle
                   </th>
                   <th style={styles.th} onClick={() => handleSort("status")}>
-                    Status {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    Status
                   </th>
                   <th style={styles.th} onClick={() => handleSort("estimate")}>
-                    Estimate {sortConfig.key === "estimate" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    Estimate
                   </th>
                   <th style={styles.th}>Action</th>
                 </tr>
               </thead>
 
               <tbody>
-                {filteredClaims.length === 0 ? (
+                {paginatedClaims.length === 0 ? (
                   <tr>
                     <td colSpan="6" style={styles.empty}>
                       No claims found
                     </td>
                   </tr>
                 ) : (
-                  filteredClaims.map((c) => (
-                    <tr
-                      key={c.id}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = styles.rowHover.background)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
-                    >
+                  paginatedClaims.map((c) => (
+                    <tr key={c.id}>
                       <td style={styles.td}>{c.id}</td>
                       <td style={styles.td}>{c.customer}</td>
                       <td style={styles.td}>{c.vehicle}</td>
@@ -162,6 +166,29 @@ function Claims() {
                 )}
               </tbody>
             </table>
+
+            {/* 🔢 Pagination controls */}
+            <div style={styles.pagination}>
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                style={styles.pageBtn}
+              >
+                Previous
+              </button>
+
+              <span style={styles.pageInfo}>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                style={styles.pageBtn}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -192,76 +219,71 @@ const styles = {
     background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
     minHeight: "100vh",
   },
-
   container: {
     maxWidth: "1200px",
     margin: "0 auto",
   },
-
   heading: {
     color: "#fff",
     marginBottom: "20px",
     fontSize: "28px",
     fontWeight: "600",
   },
-
   filters: {
     display: "flex",
     gap: "15px",
     marginBottom: "20px",
   },
-
   search: {
     flex: 1,
     padding: "10px 14px",
     borderRadius: "8px",
     border: "none",
-    outline: "none",
   },
-
   select: {
     padding: "10px 14px",
     borderRadius: "8px",
     border: "none",
-    outline: "none",
   },
-
   tableContainer: {
     background: "linear-gradient(135deg, #2a536b, #346c89)",
     padding: "22px",
     borderRadius: "16px",
-    boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
     color: "#fff",
   },
-
   table: {
     width: "100%",
     borderCollapse: "collapse",
   },
-
   th: {
     padding: "12px",
     background: "rgba(255,255,255,0.12)",
     textAlign: "left",
     cursor: "pointer",
-    userSelect: "none",
   },
-
   td: {
     padding: "12px",
     borderBottom: "1px solid rgba(255,255,255,0.12)",
   },
-
-  rowHover: {
-    background: "rgba(255,255,255,0.08)",
-  },
-
   empty: {
     padding: "20px",
     textAlign: "center",
-    color: "#e6f6ff",
   },
-
+  pagination: {
+    marginTop: "20px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pageBtn: {
+    padding: "8px 16px",
+    borderRadius: "6px",
+    border: "none",
+    cursor: "pointer",
+  },
+  pageInfo: {
+    fontSize: "14px",
+  },
   viewBtn: {
     padding: "6px 14px",
     borderRadius: "6px",
