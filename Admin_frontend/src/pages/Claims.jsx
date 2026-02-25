@@ -80,11 +80,11 @@ function Claims() {
 
               <tbody>
                 {filteredClaims.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" style={styles.empty}>
-                      No claims found
-                    </td>
-                  </tr>
+                  <div style={{ textAlign: "center", padding: "40px", opacity: 0.8 }}>
+                    <div style={{ fontSize: "40px" }}>📄</div>
+                    <p>No claims found</p>
+                    <small>Try adjusting your filters</small>
+                 </div>
                 ) : (
                   filteredClaims.map((c) => (
                     <tr
