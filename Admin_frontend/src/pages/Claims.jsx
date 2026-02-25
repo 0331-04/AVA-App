@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import Layout from "../components/Layout";
 
 function Claims() {
   const navigate = useNavigate();
 
-  // Dummy claims data (same structure as dashboard)
+  // Dummy claims data
   const claims = [
     { id: 101, customer: "John Silva", vehicle: "Toyota Corolla", status: "Pending", estimate: 120000 },
     { id: 102, customer: "Nimal Perera", vehicle: "Honda Civic", status: "Approved", estimate: 85000 },
@@ -18,31 +18,65 @@ function Claims() {
     { id: 109, customer: "Dinuka Wijesinghe", vehicle: "BMW 320i", status: "Under Review", estimate: 480000 },
   ];
 
+  /* 🔹 Filters */
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // Filtering logic
-  const filteredClaims = claims.filter((c) => {
-    const matchesSearch =
-      c.customer.toLowerCase().includes(search.toLowerCase()) ||
-      c.vehicle.toLowerCase().includes(search.toLowerCase()) ||
-      c.id.toString().includes(search);
-
-    const matchesStatus =
-      statusFilter === "All" || c.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+  /* 🔹 Sorting */
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
   });
 
-  return (
-    <div style={styles.layout}>
-      <Sidebar />
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return { key, direction: "asc" };
+    });
+  };
 
-      <main style={styles.content}>
+  /* 🔹 Filter + Sort */
+  const filteredClaims = [...claims]
+    .filter((c) => {
+      const matchesSearch =
+        c.customer.toLowerCase().includes(search.toLowerCase()) ||
+        c.vehicle.toLowerCase().includes(search.toLowerCase()) ||
+        c.id.toString().includes(search);
+
+      const matchesStatus =
+        statusFilter === "All" || c.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (!sortConfig.key) return 0;
+
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      if (typeof aVal === "number") {
+        return sortConfig.direction === "asc"
+          ? aVal - bVal
+          : bVal - aVal;
+      }
+
+      return sortConfig.direction === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    });
+
+  return (
+    <Layout>
+      <div style={styles.content}>
         <div style={styles.container}>
           <h1 style={styles.heading}>Claims</h1>
 
-          {/* Search & Filter */}
+          {/* 🔍 Search & Filter */}
           <div style={styles.filters}>
             <input
               type="text"
@@ -64,34 +98,43 @@ function Claims() {
             </select>
           </div>
 
-          {/* Claims Table */}
+          {/* 📋 Claims Table */}
           <div style={styles.tableContainer}>
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Claim ID</th>
-                  <th style={styles.th}>Customer</th>
-                  <th style={styles.th}>Vehicle</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Estimate</th>
+                  <th style={styles.th} onClick={() => handleSort("id")}>
+                    Claim ID {sortConfig.key === "id" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th style={styles.th} onClick={() => handleSort("customer")}>
+                    Customer {sortConfig.key === "customer" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th style={styles.th} onClick={() => handleSort("vehicle")}>
+                    Vehicle {sortConfig.key === "vehicle" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th style={styles.th} onClick={() => handleSort("status")}>
+                    Status {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th style={styles.th} onClick={() => handleSort("estimate")}>
+                    Estimate {sortConfig.key === "estimate" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </th>
                   <th style={styles.th}>Action</th>
                 </tr>
               </thead>
 
               <tbody>
                 {filteredClaims.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "40px", opacity: 0.8 }}>
-                    <div style={{ fontSize: "40px" }}>📄</div>
-                    <p>No claims found</p>
-                    <small>Try adjusting your filters</small>
-                 </div>
+                  <tr>
+                    <td colSpan="6" style={styles.empty}>
+                      No claims found
+                    </td>
+                  </tr>
                 ) : (
                   filteredClaims.map((c) => (
                     <tr
                       key={c.id}
                       onMouseEnter={(e) =>
-                        (e.currentTarget.style.background =
-                          styles.rowHover.background)
+                        (e.currentTarget.style.background = styles.rowHover.background)
                       }
                       onMouseLeave={(e) =>
                         (e.currentTarget.style.background = "transparent")
@@ -101,9 +144,7 @@ function Claims() {
                       <td style={styles.td}>{c.customer}</td>
                       <td style={styles.td}>{c.vehicle}</td>
                       <td style={styles.td}>
-                        <span style={statusStyle(c.status)}>
-                          {c.status}
-                        </span>
+                        <span style={statusStyle(c.status)}>{c.status}</span>
                       </td>
                       <td style={styles.td}>
                         Rs. {c.estimate.toLocaleString()}
@@ -123,12 +164,12 @@ function Claims() {
             </table>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 }
 
-/* Status badge */
+/* 🎨 Status badge */
 function statusStyle(status) {
   return {
     padding: "6px 12px",
@@ -144,18 +185,18 @@ function statusStyle(status) {
   };
 }
 
-/* Styles */
+/* 🎨 Styles */
 const styles = {
-  layout: { display: "flex", minHeight: "100vh" },
-
   content: {
-    flex: 1,
-    marginLeft: "220px",
     padding: "30px",
     background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+    minHeight: "100vh",
   },
 
-  container: { maxWidth: "1200px", margin: "0 auto" },
+  container: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+  },
 
   heading: {
     color: "#fff",
@@ -202,6 +243,8 @@ const styles = {
     padding: "12px",
     background: "rgba(255,255,255,0.12)",
     textAlign: "left",
+    cursor: "pointer",
+    userSelect: "none",
   },
 
   td: {

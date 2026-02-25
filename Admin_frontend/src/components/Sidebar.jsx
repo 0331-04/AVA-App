@@ -6,17 +6,30 @@ import {
   MdMenu,
 } from "react-icons/md";
 
+import logo from "../assets/ava-logo-full.png";
+
 function Sidebar({ collapsed, setCollapsed }) {
   return (
     <aside style={{ ...styles.sidebar, width: collapsed ? "70px" : "220px" }}>
-      {/* Toggle button */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        style={styles.toggle}
-        title="Toggle sidebar"
-      >
-        <MdMenu size={22} />
-      </button>
+      
+      {/* Logo + Toggle */}
+      <div style={styles.top}>
+        {!collapsed && (
+          <img
+            src={logo}
+            alt="AVA Insurance"
+            style={styles.logo}
+          />
+        )}
+
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          style={styles.toggle}
+          title="Toggle sidebar"
+        >
+          <MdMenu size={22} />
+        </button>
+      </div>
 
       {/* Navigation */}
       <nav style={styles.nav}>
@@ -48,7 +61,7 @@ function Sidebar({ collapsed, setCollapsed }) {
   );
 }
 
-/* Single Nav Item */
+/* 🔹 Single Nav Item */
 function NavItem({ to, icon, label, collapsed }) {
   return (
     <NavLink
@@ -65,7 +78,7 @@ function NavItem({ to, icon, label, collapsed }) {
   );
 }
 
-/* Styles */
+/* 🎨 Styles */
 const styles = {
   sidebar: {
     position: "fixed",
@@ -73,7 +86,7 @@ const styles = {
     left: 0,
     height: "100vh",
     background: "linear-gradient(180deg, #0f2027, #203a43)",
-    padding: "20px 12px",
+    padding: "16px 12px",
     boxShadow: "4px 0 20px rgba(0,0,0,0.3)",
     transition: "width 0.3s ease",
     display: "flex",
@@ -81,13 +94,23 @@ const styles = {
     zIndex: 100,
   },
 
+  top: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "30px",
+  },
+
+  logo: {
+    width: "130px",
+    objectFit: "contain",
+  },
+
   toggle: {
     background: "transparent",
     border: "none",
     color: "#00e0ff",
     cursor: "pointer",
-    marginBottom: "30px",
-    alignSelf: "flex-end",
   },
 
   nav: {
