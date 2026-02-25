@@ -1,5 +1,7 @@
 import pyttsx3
 import time
+import cv2
+import os
 
 engine = pyttsx3.init()
 engine.setProperty("rate", 165)
@@ -10,24 +12,44 @@ def speak(text):
     engine.runAndWait()
     time.sleep(1)
 
+def is_blurry(image_path, threshold=100):
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        return True
+    variance = cv2.Laplacian(image, cv2.Cv_64F).var()
+    return variance < threshold
+
+def take_photo_step(step_name, phtot_name):
+    while True:
+        speak (step_name)
+        image_path= input ("Enter image file path (after taking photo): ")
+
+        if not os.path.exists(image_path):
+            speak("I cannot find the imaage. Please try again.")
+            continue
+
+        confirm = input (" Is damage clearly visible? (yes/no): ").lower()
+        if confirm == "yes":
+            speak("Photo accepted.")
+            break
+        else:
+            speak("Please retake the photo clearly. ")
+
 def start_assistant():
     speak("Hello. I am your accident assistance AI.")
     speak("Please make sure you are safe and the vehicle is stopped.")
     speak("I will guide you to take photos for damage estimation.")
 
     photo_steps = [
-        "Please take a clear photo of the FRONT side of the vehicle.",
-        "Now take a photo of the LEFT side of the vehicle.",
-        "Now take a photo of the RIGHT side of the vehicle.",
-        "Please take a photo of the REAR side of the vehicle.",
-        "Take a CLOSE-UP photo of the damaged area.",
-        "Now take a photo of the vehicle NUMBER PLATE.",
-        "Finally, take a photo showing the SURROUNDING area of the accident."
+        ("Take a FRONT side photo of the vehicle.", "front.jpg"),
+        ("Take a LEFT side photo of the vehicle.", "left.jpg"),
+        ("Take a RIGHT side photo of the vehicle.", "right.jpg"),
+        ("Take a REAR side photo of the vehicle.", "rear.jpg"),
+        ("Take a CLOSE UP photo of the damaged area.", "damage.jpg")
     ]
 
-    for step in photo_steps:
-        speak(step)
-        input("Press ENTER after taking the photo...")
+    for step,filename in photo_steps:
+        take_photo_step(step, filename)
 
     speak("All photos have been captured successfully.")
     speak("You may now upload these images for quick estimate.")
