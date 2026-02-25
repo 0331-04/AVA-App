@@ -1,132 +1,121 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import avaLogo from "../assets/ava-logo.png"; // make sure this path is correct
+import { NavLink } from "react-router-dom";
+import {
+  MdDashboard,
+  MdDescription,
+  MdLogout,
+  MdMenu,
+} from "react-icons/md";
 
-function Sidebar() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const isActive = (path) => {
-    if (path === "/claims") {
-      return location.pathname.startsWith("/claims");
-    }
-    return location.pathname === path;
-  };
-
-  const handleLogout = () => {
-    // frontend-only logout for now
-    localStorage.removeItem("auth");
-    navigate("/login");
-  };
-
+function Sidebar({ collapsed, setCollapsed }) {
   return (
-    <aside style={styles.sidebar}>
-      {/* Logo */}
-      <div style={styles.logoContainer}>
-        <img src={avaLogo} alt="AVA Logo" style={styles.logo} />
-      </div>
+    <aside style={{ ...styles.sidebar, width: collapsed ? "70px" : "220px" }}>
+      {/* Toggle button */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        style={styles.toggle}
+        title="Toggle sidebar"
+      >
+        <MdMenu size={22} />
+      </button>
 
       {/* Navigation */}
       <nav style={styles.nav}>
-        <SidebarItem
+        <NavItem
+          to="/dashboard"
+          icon={<MdDashboard size={22} />}
           label="Dashboard"
-          active={isActive("/dashboard")}
-          onClick={() => navigate("/dashboard")}
+          collapsed={collapsed}
         />
 
-        <SidebarItem
+        <NavItem
+          to="/claims"
+          icon={<MdDescription size={22} />}
           label="Claims"
-          active={isActive("/claims")}
-          onClick={() => navigate("/claims")}
+          collapsed={collapsed}
         />
       </nav>
 
-      {/* Logout */}
-      <div style={styles.logoutContainer}>
-        <button style={styles.logoutBtn} onClick={handleLogout}>
-          Logout
-        </button>
+      {/* Footer */}
+      <div style={styles.footer}>
+        <NavItem
+          to="/login"
+          icon={<MdLogout size={22} />}
+          label="Logout"
+          collapsed={collapsed}
+        />
       </div>
     </aside>
   );
 }
 
-
-function SidebarItem({ label, active, onClick }) {
+/* Single Nav Item */
+function NavItem({ to, icon, label, collapsed }) {
   return (
-    <div
-      onClick={onClick}
-      style={{
-        ...styles.item,
-        ...(active ? styles.activeItem : {}),
-      }}
+    <NavLink
+      to={to}
+      style={({ isActive }) => ({
+        ...styles.link,
+        background: isActive ? "rgba(0,224,255,0.15)" : "transparent",
+      })}
+      title={collapsed ? label : undefined}
     >
-      {label}
-    </div>
+      <span style={styles.icon}>{icon}</span>
+      {!collapsed && <span>{label}</span>}
+    </NavLink>
   );
 }
 
-
+/* Styles */
 const styles = {
   sidebar: {
-    width: "220px",
-    minHeight: "100vh",
-    background: "linear-gradient(180deg, #0f2027, #203a43)",
-    padding: "20px",
     position: "fixed",
-    left: 0,
     top: 0,
+    left: 0,
+    height: "100vh",
+    background: "linear-gradient(180deg, #0f2027, #203a43)",
+    padding: "20px 12px",
+    boxShadow: "4px 0 20px rgba(0,0,0,0.3)",
+    transition: "width 0.3s ease",
     display: "flex",
     flexDirection: "column",
-    color: "#fff",
+    zIndex: 100,
   },
 
-  logoContainer: {
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: "40px",
-  },
-
-  logo: {
-    width: "140px",
-    objectFit: "contain",
+  toggle: {
+    background: "transparent",
+    border: "none",
+    color: "#00e0ff",
+    cursor: "pointer",
+    marginBottom: "30px",
+    alignSelf: "flex-end",
   },
 
   nav: {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
-    flex: 1,
   },
 
-  item: {
-    padding: "12px 16px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontSize: "15px",
-    fontWeight: "500",
-    color: "#cfe9f5",
-    transition: "all 0.25s ease",
-  },
-
-  activeItem: {
-    background: "rgba(0, 224, 255, 0.15)",
-    color: "#00e0ff",
-    fontWeight: "600",
-  },
-
-  logoutContainer: {
+  footer: {
     marginTop: "auto",
   },
 
-  logoutBtn: {
-    width: "100%",
-    padding: "10px",
-    background: "rgba(255,255,255,0.08)",
-    border: "none",
+  link: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "10px 12px",
     borderRadius: "10px",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: "500",
+    color: "#e6f6ff",
+    textDecoration: "none",
+    fontSize: "15px",
+    transition: "background 0.2s",
+  },
+
+  icon: {
+    minWidth: "24px",
+    display: "flex",
+    justifyContent: "center",
   },
 };
 

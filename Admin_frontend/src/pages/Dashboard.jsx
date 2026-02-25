@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
+import Layout from "../components/Layout";
 
 import {
   MdDescription,
@@ -66,18 +66,24 @@ function Dashboard() {
   ];
 
   return (
-    <div style={styles.layout}>
-      <Sidebar />
-
-      <main style={styles.content}>
+    <Layout>
+      <div style={styles.content}>
         <div style={styles.container}>
           <h1 style={styles.heading}>Admin Dashboard</h1>
 
           {/* KPI Widgets */}
           <div style={styles.widgets}>
             <Widget title="Total Claims" value={claims.length} icon={<MdDescription />} />
-            <Widget title="Pending Claims" value={claims.filter(c => c.status === "Pending").length} icon={<MdHourglassTop />} />
-            <Widget title="Approved Claims" value={claims.filter(c => c.status === "Approved").length} icon={<MdCheckCircle />} />
+            <Widget
+              title="Pending Claims"
+              value={claims.filter(c => c.status === "Pending").length}
+              icon={<MdHourglassTop />}
+            />
+            <Widget
+              title="Approved Claims"
+              value={claims.filter(c => c.status === "Approved").length}
+              icon={<MdCheckCircle />}
+            />
           </div>
 
           {/* Claims Table */}
@@ -110,7 +116,10 @@ function Dashboard() {
                     </td>
                     <td style={styles.td}>Rs. {c.estimate.toLocaleString()}</td>
                     <td style={styles.td}>
-                      <button style={styles.viewBtn} onClick={() => navigate(`/claims/${c.id}`)}>
+                      <button
+                        style={styles.viewBtn}
+                        onClick={() => navigate(`/claims/${c.id}`)}
+                      >
                         View
                       </button>
                     </td>
@@ -121,8 +130,8 @@ function Dashboard() {
           </div>
 
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 }
 
@@ -134,29 +143,41 @@ function statusStyle(status) {
     fontSize: "12px",
     color: "#fff",
     background:
-      status === "Approved" ? "#27ae60" :
-      status === "Pending" ? "#f39c12" :
-      "#2980b9",
+      status === "Approved"
+        ? "#27ae60"
+        : status === "Pending"
+        ? "#f39c12"
+        : "#2980b9",
   };
 }
 
 /* 🎨 Styles */
 const styles = {
-  layout: { display: "flex", minHeight: "100vh" },
   content: {
-    flex: 1,
-    marginLeft: "220px",
     padding: "30px",
     background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+    minHeight: "100vh",
   },
-  container: { maxWidth: "1200px", margin: "0 auto" },
-  heading: { color: "#fff", marginBottom: "24px", fontSize: "28px", fontWeight: "600" },
+
+  container: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+  },
+
+  heading: {
+    color: "#fff",
+    marginBottom: "24px",
+    fontSize: "28px",
+    fontWeight: "600",
+  },
+
   widgets: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: "20px",
     marginBottom: "30px",
   },
+
   widget: {
     position: "relative",
     background: "linear-gradient(135deg, #2b556e, #356b88)",
@@ -166,6 +187,7 @@ const styles = {
     color: "#fff",
     textAlign: "center",
   },
+
   widgetAccent: {
     position: "absolute",
     top: 0,
@@ -176,10 +198,27 @@ const styles = {
     borderTopLeftRadius: "16px",
     borderTopRightRadius: "16px",
   },
-  widgetHeader: { display: "flex", justifyContent: "center", gap: "12px" },
-  widgetTitle: { fontSize: "20px", fontWeight: "700", color: "#e6f6ff" },
+
+  widgetHeader: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "12px",
+  },
+
+  widgetTitle: {
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "#e6f6ff",
+  },
+
   widgetIcon: { fontSize: "26px" },
-  widgetValue: { fontSize: "36px", fontWeight: "700", marginTop: "10px" },
+
+  widgetValue: {
+    fontSize: "36px",
+    fontWeight: "700",
+    marginTop: "10px",
+  },
+
   tableContainer: {
     background: "linear-gradient(135deg, #2a536b, #346c89)",
     padding: "22px",
@@ -187,10 +226,28 @@ const styles = {
     boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
     color: "#fff",
   },
-  table: { width: "100%", borderCollapse: "collapse", marginTop: "15px" },
-  th: { padding: "12px", background: "rgba(255,255,255,0.12)" },
-  td: { padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.12)" },
-  rowHover: { background: "rgba(255,255,255,0.08)" },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    marginTop: "15px",
+  },
+
+  th: {
+    padding: "12px",
+    background: "rgba(255,255,255,0.12)",
+    textAlign: "left",
+  },
+
+  td: {
+    padding: "12px",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+  },
+
+  rowHover: {
+    background: "rgba(255,255,255,0.08)",
+  },
+
   viewBtn: {
     padding: "6px 14px",
     borderRadius: "6px",
