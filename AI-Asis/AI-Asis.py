@@ -19,6 +19,17 @@ def is_blurry(image_path, threshold=100):
     variance = cv2.Laplacian(image, cv2.Cv_64F).var()
     return variance < threshold
 
+def ask_damage_type_console():
+    valid_types = ["scratch", "dent", "broken light", "glass damage"]
+    while True:
+        damage = input("What is the damage type? (scratch/dent/broken light/glass damage): ").lower()
+        if damage in valid_types:
+            speak(f"You selected {damage}.")
+            return damage
+        else:
+            speak("Invalid damage type. Please type one of: scratch, dent, broken light, glass damage.")
+
+
 def take_photo_step(step_name, phtot_name):
     while True:
         speak (step_name)
@@ -39,6 +50,8 @@ def start_assistant():
     speak("Hello. I am your accident assistance AI.")
     speak("Please make sure you are safe and the vehicle is stopped.")
     speak("I will guide you to take photos for damage estimation.")
+
+    damage_type = ask_damage_type_console()
 
     photo_steps = [
         ("Take a FRONT side photo of the vehicle.", "front.jpg"),
