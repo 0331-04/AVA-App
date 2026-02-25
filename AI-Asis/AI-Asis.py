@@ -2,6 +2,7 @@ import pyttsx3
 import time
 import cv2
 import os
+from datetime import datetime
 
 engine = pyttsx3.init()
 engine.setProperty("rate", 165)
@@ -30,7 +31,7 @@ def ask_damage_type_console():
             speak("Invalid damage type. Please type one of: scratch, dent, broken light, glass damage.")
 
 
-def take_photo_step(step_name, phtot_name):
+def take_photo_step(step_name, photo_name,save_dir):
     while True:
         speak (step_name)
         image_path= input ("Enter image file path (after taking photo): ")
@@ -41,7 +42,16 @@ def take_photo_step(step_name, phtot_name):
 
         confirm = input (" Is damage clearly visible? (yes/no): ").lower()
         if confirm == "yes":
-            speak("Photo accepted.")
+            
+            os.makedirs(save_dir, exist_ok=True)
+            save_path= os.path.join(save_dir, photo_name)
+            os.remane(image_path, save_path)
+
+            timestamp= datetime.now().strfttime("%Y-%m-%d %H:%M:%S")
+            gps_loction= "N/A"
+            with open(os.path.join(save_dir, "photo_log.text"), "a")as f:
+                f.write(f"{photo_name}captured at {timestamp}, GPS: {gps_location}\n")
+
             break
         else:
             speak("Please retake the photo clearly. ")
