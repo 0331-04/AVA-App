@@ -31,6 +31,9 @@ function Claims() {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
+  /* Bulk selection */
+  const [selectedIds, setSelectedIds] = useState([]);
+
   const handleSort = (key) => {
     setSortConfig((prev) => {
       if (prev.key === key) {
@@ -85,7 +88,7 @@ function Claims() {
         : bVal.localeCompare(aVal);
     });
 
-  /* Pagination slice */
+  /* Pagination */
   const totalPages = Math.ceil(processedClaims.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedClaims = processedClaims.slice(
@@ -95,10 +98,28 @@ function Claims() {
 
   const vehicles = ["All", ...new Set(claims.map((c) => c.vehicle))];
 
-  /* CSV Export */
-  const exportToCSV = () => {
+  /* Bulk helpers */
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === paginatedClaims.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedClaims.map((c) => c.id));
+    }
+  };
+
+  const exportSelectedToCSV = () => {
+    const selected = processedClaims.filter((c) =>
+      selectedIds.includes(c.id)
+    );
+
     const headers = ["Claim ID", "Customer", "Vehicle", "Status", "Estimate"];
-    const rows = processedClaims.map((c) => [
+    const rows = selected.map((c) => [
       c.id,
       c.customer,
       c.vehicle,
@@ -106,15 +127,15 @@ function Claims() {
       c.estimate,
     ]);
 
-    const csvContent =
-      [headers, ...rows].map((e) => e.join(",")).join("\n");
+    const csv =
+      [headers, ...rows].map((r) => r.join(",")).join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = "claims-export.csv";
+    link.download = "selected-claims.csv";
     link.click();
   };
 
@@ -122,73 +143,34 @@ function Claims() {
     <Layout>
       <div style={styles.content}>
         <div style={styles.container}>
-          <div style={styles.headerRow}>
-            <h1 style={styles.heading}>Claims</h1>
-            <button style={styles.exportBtn} onClick={exportToCSV}>
-              Export CSV
-            </button>
-          </div>
+          <h1 style={styles.heading}>Claims</h1>
+
+          {/* Bulk action bar */}
+          {selectedIds.length > 0 && (
+            <div style={styles.bulkBar}>
+              <span>{selectedIds.length} selected</span>
+              <button onClick={exportSelectedToCSV}>
+                Export Selected
+              </button>
+            </div>
+          )}
 
           {/* Filters */}
           <div style={styles.filters}>
-            <input
-              placeholder="Search"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={styles.input}
-            />
-
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={styles.input}
-            >
+            <input placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="All">All Status</option>
               <option value="Pending">Pending</option>
               <option value="Approved">Approved</option>
               <option value="Under Review">Under Review</option>
             </select>
-
-            <select
-              value={vehicleFilter}
-              onChange={(e) => {
-                setVehicleFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={styles.input}
-            >
+            <select value={vehicleFilter} onChange={(e) => setVehicleFilter(e.target.value)}>
               {vehicles.map((v) => (
-                <option key={v} value={v}>{v}</option>
+                <option key={v}>{v}</option>
               ))}
             </select>
-
-            <input
-              type="number"
-              placeholder="Min Rs"
-              value={minEstimate}
-              onChange={(e) => {
-                setMinEstimate(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={styles.input}
-            />
-
-            <input
-              type="number"
-              placeholder="Max Rs"
-              value={maxEstimate}
-              onChange={(e) => {
-                setMaxEstimate(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={styles.input}
-            />
+            <input type="number" placeholder="Min Rs" value={minEstimate} onChange={(e) => setMinEstimate(e.target.value)} />
+            <input type="number" placeholder="Max Rs" value={maxEstimate} onChange={(e) => setMaxEstimate(e.target.value)} />
           </div>
 
           {/* Table */}
@@ -196,6 +178,13 @@ function Claims() {
             <table style={styles.table}>
               <thead>
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === paginatedClaims.length && paginatedClaims.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th onClick={() => handleSort("id")}>ID</th>
                   <th onClick={() => handleSort("customer")}>Customer</th>
                   <th onClick={() => handleSort("vehicle")}>Vehicle</th>
@@ -208,6 +197,13 @@ function Claims() {
               <tbody>
                 {paginatedClaims.map((c) => (
                   <tr key={c.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                      />
+                    </td>
                     <td>{c.id}</td>
                     <td>{c.customer}</td>
                     <td>{c.vehicle}</td>
@@ -216,10 +212,7 @@ function Claims() {
                     </td>
                     <td>Rs. {c.estimate.toLocaleString()}</td>
                     <td>
-                      <button
-                        style={styles.viewBtn}
-                        onClick={() => navigate(`/claims/${c.id}`)}
-                      >
+                      <button onClick={() => navigate(`/claims/${c.id}`)}>
                         View
                       </button>
                     </td>
@@ -230,19 +223,11 @@ function Claims() {
 
             {/* Pagination */}
             <div style={styles.pagination}>
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-              >
+              <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
                 Previous
               </button>
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-              >
+              <span>Page {currentPage} of {totalPages}</span>
+              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
                 Next
               </button>
             </div>
@@ -269,54 +254,14 @@ function statusStyle(status) {
 }
 
 const styles = {
-  content: {
-    padding: "30px",
-    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-    minHeight: "100vh",
-  },
+  content: { padding: "30px", background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)", minHeight: "100vh" },
   container: { maxWidth: "1200px", margin: "0 auto" },
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "16px",
-  },
-  heading: { color: "#fff", fontSize: "28px" },
-  exportBtn: {
-    padding: "10px 16px",
-    borderRadius: "8px",
-    border: "none",
-    cursor: "pointer",
-  },
-  filters: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: "12px",
-    marginBottom: "20px",
-  },
-  input: {
-    padding: "10px",
-    borderRadius: "8px",
-    border: "none",
-  },
-  tableContainer: {
-    background: "linear-gradient(135deg, #2a536b, #346c89)",
-    padding: "20px",
-    borderRadius: "16px",
-    color: "#fff",
-  },
+  heading: { color: "#fff", fontSize: "28px", marginBottom: "12px" },
+  filters: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px", marginBottom: "16px" },
+  tableContainer: { background: "linear-gradient(135deg, #2a536b, #346c89)", padding: "20px", borderRadius: "16px", color: "#fff" },
   table: { width: "100%", borderCollapse: "collapse" },
-  pagination: {
-    marginTop: "16px",
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  viewBtn: {
-    padding: "6px 14px",
-    borderRadius: "6px",
-    border: "none",
-    cursor: "pointer",
-  },
+  pagination: { marginTop: "16px", display: "flex", justifyContent: "space-between" },
+  bulkBar: { marginBottom: "12px", display: "flex", justifyContent: "space-between" },
 };
 
 export default Claims;
