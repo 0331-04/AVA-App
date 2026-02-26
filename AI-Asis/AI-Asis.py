@@ -20,6 +20,13 @@ def is_blurry(image_path, threshold=100):
     variance = cv2.Laplacian(image, cv2.Cv_64F).var()
     return variance < threshold
 
+def is_too_dark(image_path, threshold=40):
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        return True
+    return image.mean() < threshold
+    
+
 def ask_damage_type_console():
     valid_types = ["scratch", "dent", "broken light", "glass damage"]
     while True:
@@ -40,6 +47,15 @@ def take_photo_step(step_name, photo_name,save_dir):
             speak("I cannot find the imaage. Please try again.")
             continue
 
+        if is_blurry(image_path):
+            speak("The photo is blurry. Please retake it clearly.")
+            continue
+
+        if is_too_dark(image_path):
+            speak("The photo os too dark. Please use flash and retake.")
+            continue 
+
+
         confirm = input (" Is damage clearly visible? (yes/no): ").lower()
         if confirm == "yes":
             
@@ -51,6 +67,8 @@ def take_photo_step(step_name, photo_name,save_dir):
             gps_loction= "N/A"
             with open(os.path.join(save_dir, "photo_log.text"), "a")as f:
                 f.write(f"{photo_name}captured at {timestamp}, GPS: {gps_location}\n")
+            
+            speak("Photo accepted and saved.")
 
             break
         else:
