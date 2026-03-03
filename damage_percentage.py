@@ -2,10 +2,10 @@ from ultralytics import YOLO
 import cv2
 
 # Load trained model
-model = YOLO("runs\detect\train\weights\best.pt")
+model = YOLO("My First Project.v1i.yolov8/runs/detect/train2/weights/best.pt")
 
 # Use ORIGINAL image from valid/images (NOT predict folder)
-image_path ="valid/images/0071_JPEG.rf.23cdf26842f9b13a32d20281e998e37f.jpg"
+image_path = "My First Project.v1i.yolov8/valid/images/20_jpeg.rf.9ff685a955cd70b4a99f43e78cf90dd6.jpg"
 
 # Load image
 image = cv2.imread(image_path)
