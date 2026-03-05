@@ -72,7 +72,6 @@ function Widget({ title, value, icon, size = "large" }) {
 function Dashboard() {
 
   const navigate = useNavigate();
-
   const [range,setRange] = useState("Last 30 Days");
 
   const claims = [
@@ -119,6 +118,15 @@ function Dashboard() {
     { vehicle:"Suzuki Alto", count:1 },
   ];
 
+  /* Activity Feed */
+
+  const activities = [
+    { text:"Claim #102 approved by Agent Silva", time:"5 min ago" },
+    { text:"Claim #108 moved to review", time:"20 min ago" },
+    { text:"Claim #110 submitted by customer", time:"1 hour ago" },
+    { text:"Estimate updated for Claim #101", time:"2 hours ago" },
+  ];
+
   return (
 
     <Layout>
@@ -129,7 +137,6 @@ function Dashboard() {
           {/* Header */}
 
           <div style={styles.header}>
-
             <h1 style={styles.heading}>Admin Dashboard</h1>
 
             <select
@@ -142,7 +149,6 @@ function Dashboard() {
               <option>This Month</option>
               <option>Last 6 Months</option>
             </select>
-
           </div>
 
           {/* Primary KPI */}
@@ -194,6 +200,20 @@ function Dashboard() {
               </ResponsiveContainer>
 
             </div>
+
+          </div>
+
+          {/* Activity Feed */}
+
+          <div style={styles.activityCard}>
+            <h3>Recent Activity</h3>
+
+            {activities.map((a,i)=>(
+              <div key={i} style={styles.activityItem}>
+                <span>{a.text}</span>
+                <span style={styles.activityTime}>{a.time}</span>
+              </div>
+            ))}
 
           </div>
 
@@ -294,7 +314,8 @@ const styles = {
   chartRow:{
     display:"grid",
     gridTemplateColumns:"1fr 1fr",
-    gap:"20px"
+    gap:"20px",
+    marginBottom:"30px"
   },
 
   chartCard:{
@@ -302,6 +323,25 @@ const styles = {
     padding:"22px",
     borderRadius:"16px",
     color:"#fff"
+  },
+
+  activityCard:{
+    background:"linear-gradient(135deg,#2a536b,#346c89)",
+    padding:"22px",
+    borderRadius:"16px",
+    color:"#fff"
+  },
+
+  activityItem:{
+    display:"flex",
+    justifyContent:"space-between",
+    padding:"10px 0",
+    borderBottom:"1px solid rgba(255,255,255,0.1)"
+  },
+
+  activityTime:{
+    opacity:0.7,
+    fontSize:"12px"
   }
 
 };
