@@ -65,6 +65,10 @@ function Claims() {
               value={search}
               onChange={(e)=>setSearch(e.target.value)}
               style={styles.search}
+              onMouseEnter={(e)=>e.target.style.boxShadow="0 0 0 2px #00e0ff"}
+              onMouseLeave={(e)=>e.target.style.boxShadow="none"}
+              onFocus={(e)=>e.target.style.boxShadow="0 0 0 2px #00e0ff"}
+              onBlur={(e)=>e.target.style.boxShadow="none"}
             />
 
             <select
@@ -126,13 +130,20 @@ function Claims() {
 
                 {filteredClaims.map((c)=>(
 
-                  <tr key={c.id}>
+                  <tr
+                    key={c.id}
+                    style={styles.row}
+                    onClick={()=>navigate(`/claims/${c.id}`)}
+                    onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.08)"}
+                    onMouseLeave={(e)=>e.currentTarget.style.background="transparent"}
+                  >
 
                     <td style={styles.td}>
 
                       <input
                         type="checkbox"
                         checked={selectedClaims.includes(c.id)}
+                        onClick={(e)=>e.stopPropagation()}
                         onChange={()=>toggleSelect(c.id)}
                       />
 
@@ -145,7 +156,11 @@ function Claims() {
                     <td style={styles.td}>{c.vehicle}</td>
 
                     <td style={styles.td}>
-                      <span style={statusStyle(c.status)}>
+                      <span
+                        style={statusStyle(c.status)}
+                        onMouseEnter={(e)=>e.target.style.opacity="0.85"}
+                        onMouseLeave={(e)=>e.target.style.opacity="1"}
+                      >
                         {c.status}
                       </span>
                     </td>
@@ -158,7 +173,20 @@ function Claims() {
 
                       <button
                         style={styles.viewBtn}
-                        onClick={()=>navigate(`/claims/${c.id}`)}
+                        onClick={(e)=>{
+                          e.stopPropagation();
+                          navigate(`/claims/${c.id}`);
+                        }}
+                        onMouseEnter={(e)=>{
+                          e.target.style.background="#00e0ff";
+                          e.target.style.color="#000";
+                          e.target.style.transform="translateY(-2px)";
+                        }}
+                        onMouseLeave={(e)=>{
+                          e.target.style.background="#203a43";
+                          e.target.style.color="#fff";
+                          e.target.style.transform="translateY(0)";
+                        }}
                       >
                         View
                       </button>
@@ -187,7 +215,6 @@ function Claims() {
 function statusStyle(status){
 
   return{
-
     padding:"6px 12px",
     borderRadius:"20px",
     fontSize:"12px",
@@ -197,8 +224,8 @@ function statusStyle(status){
         ? "#27ae60"
         : status==="Pending"
         ? "#f39c12"
-        : "#2980b9"
-
+        : "#2980b9",
+    transition:"opacity 0.2s"
   };
 
 }
@@ -233,7 +260,8 @@ search:{
 flex:1,
 padding:"12px 16px",
 borderRadius:"8px",
-border:"none"
+border:"none",
+transition:"box-shadow 0.2s"
 },
 
 select:{
@@ -298,13 +326,19 @@ padding:"14px",
 borderBottom:"1px solid rgba(255,255,255,0.12)"
 },
 
+row:{
+cursor:"pointer",
+transition:"background 0.2s"
+},
+
 viewBtn:{
 padding:"6px 14px",
 borderRadius:"6px",
 background:"#203a43",
 color:"#fff",
 border:"none",
-cursor:"pointer"
+cursor:"pointer",
+transition:"all 0.2s ease"
 }
 
 };
