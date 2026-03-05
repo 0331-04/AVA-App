@@ -20,6 +20,17 @@ function Claims() {
 
   const [search,setSearch] = useState("");
   const [statusFilter,setStatusFilter] = useState("All");
+  const [selectedClaims,setSelectedClaims] = useState([]);
+
+  const toggleSelect = (id) => {
+
+    if(selectedClaims.includes(id)){
+      setSelectedClaims(selectedClaims.filter(c=>c!==id));
+    } else{
+      setSelectedClaims([...selectedClaims,id]);
+    }
+
+  };
 
   const filteredClaims = claims.filter((c)=>{
 
@@ -54,10 +65,6 @@ function Claims() {
               value={search}
               onChange={(e)=>setSearch(e.target.value)}
               style={styles.search}
-              onMouseEnter={(e)=>e.target.style.boxShadow="0 0 0 2px #00e0ff"}
-              onMouseLeave={(e)=>e.target.style.boxShadow="none"}
-              onFocus={(e)=>e.target.style.boxShadow="0 0 0 2px #00e0ff"}
-              onBlur={(e)=>e.target.style.boxShadow="none"}
             />
 
             <select
@@ -73,7 +80,31 @@ function Claims() {
 
           </div>
 
-          {/* Claims Table */}
+          {/* Bulk actions */}
+
+          {selectedClaims.length > 0 && (
+
+            <div style={styles.bulkBar}>
+
+              <span>{selectedClaims.length} selected</span>
+
+              <div style={styles.bulkButtons}>
+
+                <button style={styles.approveBtn}>
+                  Approve Selected
+                </button>
+
+                <button style={styles.exportBtn}>
+                  Export Selected
+                </button>
+
+              </div>
+
+            </div>
+
+          )}
+
+          {/* Table */}
 
           <div style={styles.tableContainer}>
 
@@ -81,6 +112,7 @@ function Claims() {
 
               <thead>
                 <tr>
+                  <th style={styles.th}></th>
                   <th style={styles.th}>Claim ID</th>
                   <th style={styles.th}>Customer</th>
                   <th style={styles.th}>Vehicle</th>
@@ -92,66 +124,50 @@ function Claims() {
 
               <tbody>
 
-                {filteredClaims.length === 0 ? (
+                {filteredClaims.map((c)=>(
 
-                  <tr>
-                    <td colSpan="6" style={styles.empty}>
-                      No claims found
+                  <tr key={c.id}>
+
+                    <td style={styles.td}>
+
+                      <input
+                        type="checkbox"
+                        checked={selectedClaims.includes(c.id)}
+                        onChange={()=>toggleSelect(c.id)}
+                      />
+
                     </td>
+
+                    <td style={styles.td}>{c.id}</td>
+
+                    <td style={styles.td}>{c.customer}</td>
+
+                    <td style={styles.td}>{c.vehicle}</td>
+
+                    <td style={styles.td}>
+                      <span style={statusStyle(c.status)}>
+                        {c.status}
+                      </span>
+                    </td>
+
+                    <td style={styles.td}>
+                      Rs. {c.estimate.toLocaleString()}
+                    </td>
+
+                    <td style={styles.td}>
+
+                      <button
+                        style={styles.viewBtn}
+                        onClick={()=>navigate(`/claims/${c.id}`)}
+                      >
+                        View
+                      </button>
+
+                    </td>
+
                   </tr>
 
-                ) : (
-
-                  filteredClaims.map((c)=>(
-                    <tr
-                      key={c.id}
-                      onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.08)"}
-                      onMouseLeave={(e)=>e.currentTarget.style.background="transparent"}
-                    >
-
-                      <td style={styles.td}>{c.id}</td>
-
-                      <td style={styles.td}>{c.customer}</td>
-
-                      <td style={styles.td}>{c.vehicle}</td>
-
-                      <td style={styles.td}>
-                        <span
-                          style={statusStyle(c.status)}
-                          onMouseEnter={(e)=>e.target.style.opacity="0.85"}
-                          onMouseLeave={(e)=>e.target.style.opacity="1"}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-
-                      <td style={styles.td}>
-                        Rs. {c.estimate.toLocaleString()}
-                      </td>
-
-                      <td style={styles.td}>
-                        <button
-                          style={styles.viewBtn}
-                          onMouseEnter={(e)=>{
-                            e.target.style.background="#00e0ff";
-                            e.target.style.color="#000";
-                            e.target.style.transform="translateY(-2px)";
-                          }}
-                          onMouseLeave={(e)=>{
-                            e.target.style.background="#203a43";
-                            e.target.style.color="#fff";
-                            e.target.style.transform="translateY(0)";
-                          }}
-                          onClick={()=>navigate(`/claims/${c.id}`)}
-                        >
-                          View
-                        </button>
-                      </td>
-
-                    </tr>
-                  ))
-
-                )}
+                ))}
 
               </tbody>
 
@@ -165,13 +181,13 @@ function Claims() {
     </Layout>
 
   );
-}
 
-/* Status badge */
+}
 
 function statusStyle(status){
 
   return{
+
     padding:"6px 12px",
     borderRadius:"20px",
     fontSize:"12px",
@@ -181,94 +197,115 @@ function statusStyle(status){
         ? "#27ae60"
         : status==="Pending"
         ? "#f39c12"
-        : "#2980b9",
-    transition:"opacity 0.2s"
+        : "#2980b9"
+
   };
 
 }
 
-/* Styles */
-
 const styles={
 
-  content:{
-    padding:"30px",
-    background:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
-    minHeight:"100vh"
-  },
+content:{
+padding:"30px",
+background:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
+minHeight:"100vh"
+},
 
-  container:{
-    maxWidth:"1200px",
-    margin:"0 auto"
-  },
+container:{
+maxWidth:"1200px",
+margin:"0 auto"
+},
 
-  heading:{
-    color:"#fff",
-    marginBottom:"24px",
-    fontSize:"28px",
-    fontWeight:"600"
-  },
+heading:{
+color:"#fff",
+marginBottom:"24px",
+fontSize:"28px",
+fontWeight:"600"
+},
 
-  filters:{
-    display:"flex",
-    gap:"16px",
-    marginBottom:"22px"
-  },
+filters:{
+display:"flex",
+gap:"16px",
+marginBottom:"20px"
+},
 
-  search:{
-    flex:1,
-    padding:"12px 16px",
-    borderRadius:"8px",
-    border:"none",
-    transition:"box-shadow 0.2s"
-  },
+search:{
+flex:1,
+padding:"12px 16px",
+borderRadius:"8px",
+border:"none"
+},
 
-  select:{
-    padding:"12px 16px",
-    borderRadius:"8px",
-    border:"none"
-  },
+select:{
+padding:"12px 16px",
+borderRadius:"8px",
+border:"none"
+},
 
-  tableContainer:{
-    background:"linear-gradient(135deg,#2a536b,#346c89)",
-    padding:"22px",
-    borderRadius:"16px",
-    boxShadow:"0 12px 30px rgba(0,0,0,0.25)",
-    color:"#fff"
-  },
+bulkBar:{
+display:"flex",
+justifyContent:"space-between",
+alignItems:"center",
+background:"#203a43",
+padding:"12px 18px",
+borderRadius:"10px",
+marginBottom:"16px",
+color:"#fff"
+},
 
-  table:{
-    width:"100%",
-    borderCollapse:"collapse",
-    marginTop:"10px"
-  },
+bulkButtons:{
+display:"flex",
+gap:"10px"
+},
 
-  th:{
-    padding:"14px",
-    background:"rgba(255,255,255,0.12)",
-    textAlign:"left"
-  },
+approveBtn:{
+background:"#27ae60",
+border:"none",
+color:"#fff",
+padding:"8px 14px",
+borderRadius:"6px",
+cursor:"pointer"
+},
 
-  td:{
-    padding:"16px",
-    borderBottom:"1px solid rgba(255,255,255,0.12)"
-  },
+exportBtn:{
+background:"#00e0ff",
+border:"none",
+color:"#000",
+padding:"8px 14px",
+borderRadius:"6px",
+cursor:"pointer"
+},
 
-  empty:{
-    padding:"30px",
-    textAlign:"center",
-    color:"#e6f6ff"
-  },
+tableContainer:{
+background:"linear-gradient(135deg,#2a536b,#346c89)",
+padding:"22px",
+borderRadius:"16px",
+color:"#fff"
+},
 
-  viewBtn:{
-    padding:"6px 14px",
-    borderRadius:"6px",
-    background:"#203a43",
-    color:"#fff",
-    border:"none",
-    cursor:"pointer",
-    transition:"all 0.2s ease"
-  }
+table:{
+width:"100%",
+borderCollapse:"collapse"
+},
+
+th:{
+padding:"12px",
+textAlign:"left"
+},
+
+td:{
+padding:"14px",
+borderBottom:"1px solid rgba(255,255,255,0.12)"
+},
+
+viewBtn:{
+padding:"6px 14px",
+borderRadius:"6px",
+background:"#203a43",
+color:"#fff",
+border:"none",
+cursor:"pointer"
+}
 
 };
 
