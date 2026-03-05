@@ -214,7 +214,55 @@ function Dashboard() {
                 <span style={styles.activityTime}>{a.time}</span>
               </div>
             ))}
+          </div>
 
+          {/* Recent Claims Table */}
+
+          <div style={styles.tableContainer}>
+            <h3>Recent Claims</h3>
+
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Claim ID</th>
+                  <th style={styles.th}>Customer</th>
+                  <th style={styles.th}>Vehicle</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Estimate</th>
+                  <th style={styles.th}>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {claims.map(c => (
+                  <tr key={c.id}>
+                    <td style={styles.td}>{c.id}</td>
+                    <td style={styles.td}>{c.customer}</td>
+                    <td style={styles.td}>{c.vehicle}</td>
+
+                    <td style={styles.td}>
+                      <span style={statusStyle(c.status)}>
+                        {c.status}
+                      </span>
+                    </td>
+
+                    <td style={styles.td}>
+                      Rs. {c.estimate.toLocaleString()}
+                    </td>
+
+                    <td style={styles.td}>
+                      <button
+                        style={styles.viewBtn}
+                        onClick={() => navigate(`/claims/${c.id}`)}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+
+            </table>
           </div>
 
         </div>
@@ -225,125 +273,48 @@ function Dashboard() {
   );
 }
 
+/* STATUS BADGE */
+
+function statusStyle(status) {
+  return {
+    padding: "6px 12px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    color: "#fff",
+    background:
+      status === "Approved"
+        ? "#27ae60"
+        : status === "Pending"
+        ? "#f39c12"
+        : "#2980b9",
+  };
+}
+
 const styles = {
-
-  content:{
-    padding:"30px",
-    background:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
-    minHeight:"100vh"
-  },
-
-  container:{
-    maxWidth:"1200px",
-    margin:"0 auto"
-  },
-
-  header:{
-    display:"flex",
-    justifyContent:"space-between",
-    alignItems:"center",
-    marginBottom:"24px"
-  },
-
-  heading:{
-    color:"#fff",
-    fontSize:"28px",
-    fontWeight:"600"
-  },
-
-  rangeSelect:{
-    padding:"8px 14px",
-    borderRadius:"8px",
-    border:"none"
-  },
-
-  widgets:{
-    display:"grid",
-    gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",
-    gap:"20px",
-    marginBottom:"20px"
-  },
-
-  secondaryWidgets:{
-    display:"grid",
-    gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",
-    gap:"16px",
-    marginBottom:"30px"
-  },
-
-  widget:{
-    background:"linear-gradient(135deg,#2b556e,#356b88)",
-    padding:"24px",
-    borderRadius:"16px",
-    textAlign:"center",
-    color:"#fff"
-  },
-
-  smallWidget:{
-    background:"linear-gradient(135deg,#2b556e,#356b88)",
-    padding:"16px",
-    borderRadius:"14px",
-    textAlign:"center",
-    color:"#fff"
-  },
-
-  widgetHeader:{
-    display:"flex",
-    justifyContent:"center",
-    gap:"8px"
-  },
-
-  widgetTitle:{
-    fontSize:"16px"
-  },
-
-  widgetIcon:{
-    fontSize:"22px"
-  },
-
-  widgetValue:{
-    fontSize:"32px",
-    fontWeight:"700"
-  },
-
-  smallWidgetValue:{
-    fontSize:"22px",
-    fontWeight:"700"
-  },
-
-  chartRow:{
-    display:"grid",
-    gridTemplateColumns:"1fr 1fr",
-    gap:"20px",
-    marginBottom:"30px"
-  },
-
-  chartCard:{
-    background:"linear-gradient(135deg,#2a536b,#346c89)",
-    padding:"22px",
-    borderRadius:"16px",
-    color:"#fff"
-  },
-
-  activityCard:{
-    background:"linear-gradient(135deg,#2a536b,#346c89)",
-    padding:"22px",
-    borderRadius:"16px",
-    color:"#fff"
-  },
-
-  activityItem:{
-    display:"flex",
-    justifyContent:"space-between",
-    padding:"10px 0",
-    borderBottom:"1px solid rgba(255,255,255,0.1)"
-  },
-
-  activityTime:{
-    opacity:0.7,
-    fontSize:"12px"
-  }
-
+  content:{padding:"30px",background:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",minHeight:"100vh"},
+  container:{maxWidth:"1200px",margin:"0 auto"},
+  header:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"24px"},
+  heading:{color:"#fff",fontSize:"28px",fontWeight:"600"},
+  rangeSelect:{padding:"8px 14px",borderRadius:"8px",border:"none"},
+  widgets:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:"20px",marginBottom:"20px"},
+  secondaryWidgets:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:"16px",marginBottom:"30px"},
+  widget:{background:"linear-gradient(135deg,#2b556e,#356b88)",padding:"24px",borderRadius:"16px",textAlign:"center",color:"#fff"},
+  smallWidget:{background:"linear-gradient(135deg,#2b556e,#356b88)",padding:"16px",borderRadius:"14px",textAlign:"center",color:"#fff"},
+  widgetHeader:{display:"flex",justifyContent:"center",gap:"8px"},
+  widgetTitle:{fontSize:"16px"},
+  widgetIcon:{fontSize:"22px"},
+  widgetValue:{fontSize:"32px",fontWeight:"700"},
+  smallWidgetValue:{fontSize:"22px",fontWeight:"700"},
+  chartRow:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"20px",marginBottom:"30px"},
+  chartCard:{background:"linear-gradient(135deg,#2a536b,#346c89)",padding:"22px",borderRadius:"16px",color:"#fff"},
+  activityCard:{background:"linear-gradient(135deg,#2a536b,#346c89)",padding:"22px",borderRadius:"16px",color:"#fff",marginBottom:"30px"},
+  activityItem:{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,0.1)"},
+  activityTime:{opacity:0.7,fontSize:"12px"},
+  tableContainer:{background:"linear-gradient(135deg,#2a536b,#346c89)",padding:"22px",borderRadius:"16px",color:"#fff"},
+  table:{width:"100%",borderCollapse:"collapse"},
+  th:{padding:"12px",textAlign:"left"},
+  td:{padding:"12px"},
+  viewBtn:{padding:"6px 14px",borderRadius:"6px",background:"#203a43",color:"#fff",border:"none",cursor:"pointer"}
 };
 
 export default Dashboard;
