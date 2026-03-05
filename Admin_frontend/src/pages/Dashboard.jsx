@@ -6,6 +6,9 @@ import {
   MdDescription,
   MdHourglassTop,
   MdCheckCircle,
+  MdTrendingUp,
+  MdTaskAlt,
+  MdAttachMoney
 } from "react-icons/md";
 
 import {
@@ -148,9 +151,23 @@ function Dashboard() {
 
           {/* Secondary Analytics */}
           <div style={styles.secondaryWidgets}>
-            <Widget title="Avg Claim Value" value={avgClaim} icon={<MdDescription />} />
-            <Widget title="Approval Rate (%)" value={approvalRate} icon={<MdCheckCircle />} />
-            <Widget title="Total Estimate" value={totalEstimate} icon={<MdHourglassTop />} />
+            <Widget
+              title="Avg Claim Value"
+              value={avgClaim}
+              icon={<MdTrendingUp />}
+            />
+
+            <Widget
+              title="Approval Rate (%)"
+              value={approvalRate}
+              icon={<MdTaskAlt />}
+            />
+
+            <Widget
+              title="Total Estimate"
+              value={totalEstimate}
+              icon={<MdAttachMoney />}
+            />
           </div>
 
           {/* Charts */}
@@ -272,15 +289,15 @@ function statusStyle(status) {
 
 const styles = {
 
-  content: {
-    padding: "30px",
-    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
-    minHeight: "100vh",
+  content:{
+    padding:"30px",
+    background:"linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
+    minHeight:"100vh"
   },
 
-  container: {
-    maxWidth: "1200px",
-    margin: "0 auto",
+  container:{
+    maxWidth:"1200px",
+    margin:"0 auto"
   },
 
   header:{
@@ -304,14 +321,14 @@ const styles = {
 
   widgets:{
     display:"grid",
-    gridTemplateColumns:"repeat(auto-fit, minmax(240px,1fr))",
+    gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",
     gap:"20px",
     marginBottom:"20px"
   },
 
   secondaryWidgets:{
     display:"grid",
-    gridTemplateColumns:"repeat(auto-fit, minmax(220px,1fr))",
+    gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",
     gap:"18px",
     marginBottom:"30px"
   },
