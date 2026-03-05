@@ -48,9 +48,12 @@ function AnimatedNumber({ value, duration = 1200 }) {
 }
 
 /* 📦 KPI Widget */
-function Widget({ title, value, icon }) {
+function Widget({ title, value, icon, size = "large" }) {
+
+  const isSmall = size === "small";
+
   return (
-    <div style={styles.widget}>
+    <div style={isSmall ? styles.smallWidget : styles.widget}>
       <div style={styles.widgetAccent} />
 
       <div style={styles.widgetHeader}>
@@ -58,7 +61,7 @@ function Widget({ title, value, icon }) {
         <p style={styles.widgetTitle}>{title}</p>
       </div>
 
-      <h2 style={styles.widgetValue}>
+      <h2 style={isSmall ? styles.smallWidgetValue : styles.widgetValue}>
         <AnimatedNumber value={value} />
       </h2>
     </div>
@@ -134,7 +137,7 @@ function Dashboard() {
             </select>
           </div>
 
-          {/* KPI Widgets */}
+          {/* Primary KPI Widgets */}
           <div style={styles.widgets}>
             <Widget title="Total Claims" value={claims.length} icon={<MdDescription />} />
             <Widget
@@ -149,24 +152,27 @@ function Dashboard() {
             />
           </div>
 
-          {/* Secondary Analytics */}
+          {/* Smaller Analytics Cards */}
           <div style={styles.secondaryWidgets}>
             <Widget
               title="Avg Claim Value"
               value={avgClaim}
               icon={<MdTrendingUp />}
+              size="small"
             />
 
             <Widget
               title="Approval Rate (%)"
               value={approvalRate}
               icon={<MdTaskAlt />}
+              size="small"
             />
 
             <Widget
               title="Total Estimate"
               value={totalEstimate}
               icon={<MdAttachMoney />}
+              size="small"
             />
           </div>
 
@@ -190,7 +196,6 @@ function Dashboard() {
                   />
                 </LineChart>
               </ResponsiveContainer>
-
             </div>
 
             <div style={styles.chartCard}>
@@ -214,7 +219,6 @@ function Dashboard() {
                   />
                 </BarChart>
               </ResponsiveContainer>
-
             </div>
 
           </div>
@@ -234,13 +238,10 @@ function Dashboard() {
                   <th style={styles.th}>Action</th>
                 </tr>
               </thead>
+
               <tbody>
                 {claims.map(c => (
-                  <tr
-                    key={c.id}
-                    onMouseEnter={e => (e.currentTarget.style.background = styles.rowHover.background)}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                  >
+                  <tr key={c.id}>
                     <td style={styles.td}>{c.id}</td>
                     <td style={styles.td}>{c.customer}</td>
                     <td style={styles.td}>{c.vehicle}</td>
@@ -259,6 +260,7 @@ function Dashboard() {
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
 
@@ -267,8 +269,6 @@ function Dashboard() {
     </Layout>
   );
 }
-
-/* Status badge */
 
 function statusStyle(status) {
   return {
@@ -284,8 +284,6 @@ function statusStyle(status) {
         : "#2980b9",
   };
 }
-
-/* Styles */
 
 const styles = {
 
@@ -328,8 +326,8 @@ const styles = {
 
   secondaryWidgets:{
     display:"grid",
-    gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",
-    gap:"18px",
+    gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",
+    gap:"16px",
     marginBottom:"30px"
   },
 
@@ -339,6 +337,16 @@ const styles = {
     padding:"24px",
     borderRadius:"16px",
     boxShadow:"0 12px 30px rgba(0,0,0,0.25)",
+    color:"#fff",
+    textAlign:"center"
+  },
+
+  smallWidget:{
+    position:"relative",
+    background:"linear-gradient(135deg,#2b556e,#356b88)",
+    padding:"18px",
+    borderRadius:"14px",
+    boxShadow:"0 8px 20px rgba(0,0,0,0.20)",
     color:"#fff",
     textAlign:"center"
   },
@@ -357,7 +365,7 @@ const styles = {
   widgetHeader:{
     display:"flex",
     justifyContent:"center",
-    gap:"12px"
+    gap:"10px"
   },
 
   widgetTitle:{
@@ -366,12 +374,18 @@ const styles = {
     color:"#e6f6ff"
   },
 
-  widgetIcon:{fontSize:"24px"},
+  widgetIcon:{fontSize:"22px"},
 
   widgetValue:{
-    fontSize:"32px",
+    fontSize:"34px",
     fontWeight:"700",
     marginTop:"10px"
+  },
+
+  smallWidgetValue:{
+    fontSize:"24px",
+    fontWeight:"700",
+    marginTop:"6px"
   },
 
   chartRow:{
@@ -412,10 +426,6 @@ const styles = {
   td:{
     padding:"12px",
     borderBottom:"1px solid rgba(255,255,255,0.12)"
-  },
-
-  rowHover:{
-    background:"rgba(255,255,255,0.08)"
   },
 
   viewBtn:{
