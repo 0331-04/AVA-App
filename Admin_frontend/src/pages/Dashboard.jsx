@@ -86,8 +86,6 @@ function Dashboard() {
     { id:109, customer:"Dinuka Wijesinghe", vehicle:"BMW 320i", status:"Under Review", estimate:480000 },
   ];
 
-  /* Analytics */
-
   const avgClaim =
     Math.round(
       claims.reduce((sum,c)=>sum+c.estimate,0) / claims.length
@@ -100,8 +98,6 @@ function Dashboard() {
 
   const totalEstimate =
     claims.reduce((sum,c)=>sum+c.estimate,0);
-
-  /* Chart Data */
 
   const claimsOverTime = [
     { month:"Jan", claims:4 },
@@ -118,8 +114,6 @@ function Dashboard() {
     { vehicle:"Suzuki Alto", count:1 },
   ];
 
-  /* Activity Feed */
-
   const activities = [
     { text:"Claim #102 approved by Agent Silva", time:"5 min ago" },
     { text:"Claim #108 moved to review", time:"20 min ago" },
@@ -133,8 +127,6 @@ function Dashboard() {
 
       <div style={styles.content}>
         <div style={styles.container}>
-
-          {/* Header */}
 
           <div style={styles.header}>
             <h1 style={styles.heading}>Admin Dashboard</h1>
@@ -216,7 +208,7 @@ function Dashboard() {
             ))}
           </div>
 
-          {/* Recent Claims Table */}
+          {/* Recent Claims */}
 
           <div style={styles.tableContainer}>
             <h3>Recent Claims</h3>
@@ -253,11 +245,22 @@ function Dashboard() {
                     <td style={styles.td}>
                       <button
                         style={styles.viewBtn}
+                        onMouseEnter={(e)=>{
+                          e.target.style.background = "#00e0ff";
+                          e.target.style.color = "#000";
+                          e.target.style.transform = "translateY(-2px)";
+                        }}
+                        onMouseLeave={(e)=>{
+                          e.target.style.background = "#203a43";
+                          e.target.style.color = "#fff";
+                          e.target.style.transform = "translateY(0)";
+                        }}
                         onClick={() => navigate(`/claims/${c.id}`)}
                       >
                         View
                       </button>
                     </td>
+
                   </tr>
                 ))}
               </tbody>
@@ -272,8 +275,6 @@ function Dashboard() {
 
   );
 }
-
-/* STATUS BADGE */
 
 function statusStyle(status) {
   return {
@@ -314,7 +315,15 @@ const styles = {
   table:{width:"100%",borderCollapse:"collapse"},
   th:{padding:"12px",textAlign:"left"},
   td:{padding:"12px"},
-  viewBtn:{padding:"6px 14px",borderRadius:"6px",background:"#203a43",color:"#fff",border:"none",cursor:"pointer"}
+  viewBtn:{
+    padding:"6px 14px",
+    borderRadius:"6px",
+    background:"#203a43",
+    color:"#fff",
+    border:"none",
+    cursor:"pointer",
+    transition:"all 0.2s ease"
+  }
 };
 
 export default Dashboard;
