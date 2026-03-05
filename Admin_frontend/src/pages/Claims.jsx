@@ -7,21 +7,21 @@ function Claims() {
   const navigate = useNavigate();
 
   const claims = [
-    { id: 101, customer: "John Silva", vehicle: "Toyota Corolla", status: "Pending", estimate: 120000 },
-    { id: 102, customer: "Nimal Perera", vehicle: "Honda Civic", status: "Approved", estimate: 85000 },
-    { id: 103, customer: "Kasun Fernando", vehicle: "Nissan X-Trail", status: "Under Review", estimate: 150000 },
-    { id: 104, customer: "Amal Jayasinghe", vehicle: "Suzuki Alto", status: "Approved", estimate: 45000 },
-    { id: 105, customer: "Sachini Peris", vehicle: "Toyota Aqua", status: "Pending", estimate: 98000 },
-    { id: 106, customer: "Ruwan De Silva", vehicle: "Mitsubishi Montero", status: "Under Review", estimate: 320000 },
-    { id: 107, customer: "Tharindu Lakmal", vehicle: "Honda Fit", status: "Approved", estimate: 76000 },
-    { id: 108, customer: "Isuru Fernando", vehicle: "Toyota Hilux", status: "Pending", estimate: 210000 },
-    { id: 109, customer: "Dinuka Wijesinghe", vehicle: "BMW 320i", status: "Under Review", estimate: 480000 },
+    { id:101, customer:"John Silva", vehicle:"Toyota Corolla", status:"Pending", estimate:120000 },
+    { id:102, customer:"Nimal Perera", vehicle:"Honda Civic", status:"Approved", estimate:85000 },
+    { id:103, customer:"Kasun Fernando", vehicle:"Nissan X-Trail", status:"Under Review", estimate:150000 },
+    { id:104, customer:"Amal Jayasinghe", vehicle:"Suzuki Alto", status:"Approved", estimate:45000 },
+    { id:105, customer:"Sachini Peris", vehicle:"Toyota Aqua", status:"Pending", estimate:98000 },
+    { id:106, customer:"Ruwan De Silva", vehicle:"Mitsubishi Montero", status:"Under Review", estimate:320000 },
+    { id:107, customer:"Tharindu Lakmal", vehicle:"Honda Fit", status:"Approved", estimate:76000 },
+    { id:108, customer:"Isuru Fernando", vehicle:"Toyota Hilux", status:"Pending", estimate:210000 },
+    { id:109, customer:"Dinuka Wijesinghe", vehicle:"BMW 320i", status:"Under Review", estimate:480000 },
   ];
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [search,setSearch] = useState("");
+  const [statusFilter,setStatusFilter] = useState("All");
 
-  const filteredClaims = claims.filter((c) => {
+  const filteredClaims = claims.filter((c)=>{
 
     const matchesSearch =
       c.customer.toLowerCase().includes(search.toLowerCase()) ||
@@ -52,13 +52,17 @@ function Claims() {
               type="text"
               placeholder="Search by Claim ID, Customer or Vehicle"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e)=>setSearch(e.target.value)}
               style={styles.search}
+              onMouseEnter={(e)=>e.target.style.boxShadow="0 0 0 2px #00e0ff"}
+              onMouseLeave={(e)=>e.target.style.boxShadow="none"}
+              onFocus={(e)=>e.target.style.boxShadow="0 0 0 2px #00e0ff"}
+              onBlur={(e)=>e.target.style.boxShadow="none"}
             />
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e)=>setStatusFilter(e.target.value)}
               style={styles.select}
             >
               <option value="All">All Status</option>
@@ -69,7 +73,7 @@ function Claims() {
 
           </div>
 
-          {/* Table */}
+          {/* Claims Table */}
 
           <div style={styles.tableContainer}>
 
@@ -98,17 +102,11 @@ function Claims() {
 
                 ) : (
 
-                  filteredClaims.map((c) => (
-
+                  filteredClaims.map((c)=>(
                     <tr
                       key={c.id}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background =
-                          styles.rowHover.background)
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
+                      onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,0.08)"}
+                      onMouseLeave={(e)=>e.currentTarget.style.background="transparent"}
                     >
 
                       <td style={styles.td}>{c.id}</td>
@@ -118,7 +116,11 @@ function Claims() {
                       <td style={styles.td}>{c.vehicle}</td>
 
                       <td style={styles.td}>
-                        <span style={statusStyle(c.status)}>
+                        <span
+                          style={statusStyle(c.status)}
+                          onMouseEnter={(e)=>e.target.style.opacity="0.85"}
+                          onMouseLeave={(e)=>e.target.style.opacity="1"}
+                        >
                           {c.status}
                         </span>
                       </td>
@@ -130,14 +132,23 @@ function Claims() {
                       <td style={styles.td}>
                         <button
                           style={styles.viewBtn}
-                          onClick={() => navigate(`/claims/${c.id}`)}
+                          onMouseEnter={(e)=>{
+                            e.target.style.background="#00e0ff";
+                            e.target.style.color="#000";
+                            e.target.style.transform="translateY(-2px)";
+                          }}
+                          onMouseLeave={(e)=>{
+                            e.target.style.background="#203a43";
+                            e.target.style.color="#fff";
+                            e.target.style.transform="translateY(0)";
+                          }}
+                          onClick={()=>navigate(`/claims/${c.id}`)}
                         >
                           View
                         </button>
                       </td>
 
                     </tr>
-
                   ))
 
                 )}
@@ -154,31 +165,31 @@ function Claims() {
     </Layout>
 
   );
-
 }
 
-/* Status Badge */
+/* Status badge */
 
-function statusStyle(status) {
+function statusStyle(status){
 
-  return {
-    padding: "6px 12px",
-    borderRadius: "20px",
-    fontSize: "12px",
-    color: "#fff",
+  return{
+    padding:"6px 12px",
+    borderRadius:"20px",
+    fontSize:"12px",
+    color:"#fff",
     background:
-      status === "Approved"
+      status==="Approved"
         ? "#27ae60"
-        : status === "Pending"
+        : status==="Pending"
         ? "#f39c12"
         : "#2980b9",
+    transition:"opacity 0.2s"
   };
 
 }
 
 /* Styles */
 
-const styles = {
+const styles={
 
   content:{
     padding:"30px",
@@ -208,7 +219,8 @@ const styles = {
     flex:1,
     padding:"12px 16px",
     borderRadius:"8px",
-    border:"none"
+    border:"none",
+    transition:"box-shadow 0.2s"
   },
 
   select:{
@@ -234,17 +246,12 @@ const styles = {
   th:{
     padding:"14px",
     background:"rgba(255,255,255,0.12)",
-    textAlign:"left",
-    fontSize:"14px"
+    textAlign:"left"
   },
 
   td:{
     padding:"16px",
     borderBottom:"1px solid rgba(255,255,255,0.12)"
-  },
-
-  rowHover:{
-    background:"rgba(255,255,255,0.08)"
   },
 
   empty:{
@@ -259,7 +266,8 @@ const styles = {
     background:"#203a43",
     color:"#fff",
     border:"none",
-    cursor:"pointer"
+    cursor:"pointer",
+    transition:"all 0.2s ease"
   }
 
 };
