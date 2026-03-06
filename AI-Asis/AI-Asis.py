@@ -1,4 +1,3 @@
-import pyttsx3
 import time
 import cv2
 import os
@@ -33,31 +32,63 @@ def ask_damage_type_console():
         else:
             speak("Invalid damage type. Please type one of: scratch, dent, broken light, glass damage.")
 
+def capturePhoto (photo_name, save_dir):
+    os.makedirs(save_dir, exist_ok=True)
+    cap =cv2.VideoCapture(0)
+    speak("Camera opened. Press C to capture photo.")
+
+    while True:
+        ret, frame = cap.read()
+        
+        if not ret:
+            speak ("Cannot access camera.")
+            break
+
+        cv2.imshow("camera- press C to Capture", frame)
+
+        key = cv2.waitKey(1)
+
+        if key == ord('c'):
+            save_path = os.path.join (save_dir, photo_name)
+            cv2.imwrite(save_path, frame)
+            speak("Photo captured.")
+            break
+
+        elif key== ord('q'):
+            save_path=None
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    return save_path
+
+                
+
 
 def take_photo_step(step_name, photo_name,save_dir):
     while True:
         speak (step_name)
-        image_path= input ("Enter image file path (after taking photo): ")
+        image_path= capturePhoto(photo_name, save_dir)
 
-        if not os.path.exists(image_path):
-            speak("I cannot find the imaage. Please try again.")
+        if image_path is None:
             continue
+
 
         if is_blurry(image_path):
             speak("The photo is blurry. Please retake it clearly.")
+            os.remove(image_path)
             continue
 
         if is_too_dark(image_path):
             speak("The photo os too dark. Please use flash and retake.")
-            continue 
+            os.remove(image_path)
+            continue  
 
 
         confirm = input (" Is damage clearly visible? (yes/no): ").lower()
         if confirm == "yes":
             
-            os.makedirs(save_dir, exist_ok=True)
-            save_path= os.path.join(save_dir, photo_name)
-            os.remane(image_path, save_path)
 
             timestamp= datetime.now().strfttime("%Y-%m-%d %H:%M:%S")
             gps_loction= "N/A"
@@ -65,10 +96,10 @@ def take_photo_step(step_name, photo_name,save_dir):
                 f.write(f"{photo_name}captured at {timestamp}, GPS: {gps_location}\n")
             
             speak("Photo accepted and saved.")
-
             break
         else:
             speak("Please retake the photo clearly. ")
+            os.remove(image_path)
 
 def start_assistant():
     speak("Hello. I am your accident assistance AI.")
