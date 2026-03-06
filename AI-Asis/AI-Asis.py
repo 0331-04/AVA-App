@@ -4,13 +4,9 @@ import cv2
 import os
 from datetime import datetime
 
-engine = pyttsx3.init()
-engine.setProperty("rate", 165)
 
 def speak(text):
     print("AI:", text)
-    engine.say(text)
-    engine.runAndWait()
     time.sleep(1)
 
 def is_blurry(image_path, threshold=100):
@@ -89,8 +85,10 @@ def start_assistant():
         ("Take a CLOSE UP photo of the damaged area.", "damage.jpg")
     ]
 
+    save_dir="accident_photos"
+
     for step,filename in photo_steps:
-        take_photo_step(step, filename)
+        take_photo_step(step, filename, save_dir)
 
     speak("All photos have been captured successfully.")
     speak("You may now upload these images for quick estimate.")
