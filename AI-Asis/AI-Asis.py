@@ -33,8 +33,13 @@ def ask_damage_type_console():
             speak("Invalid damage type. Please type one of: scratch, dent, broken light, glass damage.")
 
 def capturePhoto (photo_name, save_dir):
+
+    if save_dir is None:
+        save_dir = "accident _photos"
+
     os.makedirs(save_dir, exist_ok=True)
-    cap =cv2.VideoCapture(0)
+    save_path = None
+    cap =cv2.VideoCapture(0, cv2.CAP_DSHOW)
     speak("Camera opened. Press C to capture photo.")
     
 
@@ -91,8 +96,8 @@ def take_photo_step(step_name, photo_name,save_dir):
         if confirm == "yes":
             
 
-            timestamp= datetime.now().strfttime("%Y-%m-%d %H:%M:%S")
-            gps_loction= "N/A"
+            timestamp= datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            gps_location= "N/A"
             with open(os.path.join(save_dir, "photo_log.text"), "a")as f:
                 f.write(f"{photo_name}captured at {timestamp}, GPS: {gps_location}\n")
             
