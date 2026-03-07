@@ -12,7 +12,7 @@ def is_blurry(image_path, threshold=100):
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if image is None:
         return True
-    variance = cv2.Laplacian(image, cv2.Cv_64F).var()
+    variance = cv2.Laplacian(image, cv2.CV_64F).var()
     return variance < threshold
 
 def is_too_dark(image_path, threshold=40):
@@ -36,6 +36,7 @@ def capturePhoto (photo_name, save_dir):
     os.makedirs(save_dir, exist_ok=True)
     cap =cv2.VideoCapture(0)
     speak("Camera opened. Press C to capture photo.")
+    
 
     while True:
         ret, frame = cap.read()
@@ -46,7 +47,7 @@ def capturePhoto (photo_name, save_dir):
 
         cv2.imshow("camera- press C to Capture", frame)
 
-        key = cv2.waitKey(1)
+        key = cv2.waitKey(1) & 0xFF 
 
         if key == ord('c'):
             save_path = os.path.join (save_dir, photo_name)
@@ -127,4 +128,3 @@ def start_assistant():
 
 if __name__ == "__main__":
     start_assistant()
-     
