@@ -91,11 +91,33 @@ def take_photo_step(step_name, photo_name,save_dir):
             os.remove(image_path)
             continue  
 
+        img= cv2.imread(image_path)
 
+        if img is not None:
+            cv2.imshow("Photo Preview - Enter to Keep / Delete to retake", img)
+            speak("Preveiew shown. Press Enter to keep the photo or DELETE to retake")
+            key = cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+            if key == 13:
+                timestamp = datetime.now().strftime("%Y-%m-%D %H:%M:%S")
+                gps_location = "N/A"
+
+                with open(os.path.join(save_dir,"photo_log_txt"), "a") as f:
+                    f.write(f"{photo_name} captired at {timestamp}, GPS: {gps_location}\n")
+
+                speak ("Photo accepted and saved.")
+                break
+
+            elif key == 127:
+                speak("photo deleted. Please retake the photo.")
+                os.remove(image_path)
+                continue
+        
         confirm = input (" Is damage clearly visible? (yes/no): ").lower()
+
         if confirm == "yes":
             
-
             timestamp= datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             gps_location= "N/A"
             with open(os.path.join(save_dir, "photo_log.text"), "a")as f:
