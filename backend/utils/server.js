@@ -27,7 +27,6 @@ mongoose.connect(process.env.MONGODB_URI)
 const authRoutes = require('../authentication/authRoute');
 const userRoutes = require("../user profile/userRoute");
 const claimRoutes = require('../claims/claimRoutes');
-app.use('/api/claims', claimRoutes);
 
 // API ROUTES
 
