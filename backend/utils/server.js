@@ -18,17 +18,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // DATABASE CONNECTION - MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect(process.env.MONGODB_URI)
+
 .then(() => console.log('✓ MongoDB connected successfully'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // IMPORT ROUTES
-const authRoutes = require('./authentication/authRoute');
-const userRoutes = require("./user profile/userRoute");
-const claimRoutes = require('./claims/claimRoutes');
+const authRoutes = require('../authentication/authRoute');
+const userRoutes = require("../user profile/userRoute");
+const claimRoutes = require('../claims/claimRoutes');
 app.use('/api/claims', claimRoutes);
 
 // API ROUTES
