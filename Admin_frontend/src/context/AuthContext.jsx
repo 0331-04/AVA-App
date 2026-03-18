@@ -8,8 +8,9 @@ export function AuthProvider({ children }) {
   const login = (email) => {
     let role = "viewer";
 
-    if (email === "admin@ava.com") role = "admin";
-    else if (email === "agent@ava.com") role = "agent";
+    if (email === "demo_admin@gmail.com") role = "admin";
+    else if (email === "demo_agent@gmail.com") role = "agent";
+    else if (email === "demo_viewer@gmail.com") role = "viewer";
 
     setUser({ email, role });
   };
@@ -25,6 +26,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
+// ✅ THIS IS THE IMPORTANT PART
+export const useAuth = () => {
   return useContext(AuthContext);
-}
+};

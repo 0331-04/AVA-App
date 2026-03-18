@@ -2,23 +2,34 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
+console.log("LOGIN COMPONENT LOADED 🚀");
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    setLoading(true);
 
-    // Mock login + role assignment
-    setTimeout(() => {
-      login(email);
+    const cleanEmail = email.trim().toLowerCase();
+
+    console.log("===== AUTH DEBUG =====");
+    console.log("CLEAN EMAIL:", cleanEmail);
+
+    if (
+      cleanEmail === "demo_admin@gmail.com" ||
+      cleanEmail === "demo_agent@gmail.com" ||
+      cleanEmail === "demo_viewer@gmail.com"
+    ) {
+      login(cleanEmail);
       navigate("/dashboard");
-    }, 1000);
+    } else {
+      setError("Invalid email or password");
+    }
   };
 
   return (
@@ -32,7 +43,10 @@ function Login() {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError("");
+            }}
             style={styles.input}
             required
           />
@@ -41,30 +55,20 @@ function Login() {
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError("");
+            }}
             style={styles.input}
             required
           />
 
-          <button
-            type="submit"
-            style={{
-              ...styles.button,
-              opacity: loading ? 0.7 : 1,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-            disabled={loading}
-          >
-            {loading ? "Logging in..." : "Login"}
+          {error && <p style={styles.error}>{error}</p>}
+
+          <button type="submit" style={styles.button}>
+            Login
           </button>
         </form>
-
-        <p style={styles.hint}>
-          Try:
-          <br /> admin@ava.com
-          <br /> agent@ava.com
-          <br /> any other email → viewer
-        </p>
       </div>
     </div>
   );
@@ -77,30 +81,19 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+    background: "linear-gradient(135deg,#0f2027,#203a43,#2c5364)",
   },
   card: {
     background: "#ffffff",
     padding: "40px",
-    width: "380px",
+    width: "360px",
     borderRadius: "12px",
     boxShadow: "0 12px 35px rgba(0,0,0,0.25)",
     textAlign: "center",
   },
-  title: {
-    marginBottom: "6px",
-    color: "#203a43",
-  },
-  subtitle: {
-    marginBottom: "25px",
-    color: "#666",
-    fontSize: "14px",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-  },
+  title: { marginBottom: "6px", color: "#203a43" },
+  subtitle: { marginBottom: "25px", color: "#666", fontSize: "14px" },
+  form: { display: "flex", flexDirection: "column", gap: "14px" },
   input: {
     padding: "12px",
     fontSize: "14px",
@@ -115,11 +108,12 @@ const styles = {
     background: "#203a43",
     color: "#fff",
     marginTop: "10px",
+    cursor: "pointer",
   },
-  hint: {
-    marginTop: "18px",
-    fontSize: "12px",
-    color: "#888",
+  error: {
+    color: "#c0392b",
+    fontSize: "13px",
+    marginTop: "-6px",
   },
 };
 
