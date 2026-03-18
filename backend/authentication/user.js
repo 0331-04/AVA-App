@@ -153,9 +153,7 @@ const UserSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// ============================================
 // MIDDLEWARE
-// ============================================
 
 // Hash password before saving
 UserSchema.pre('save', async function(next) {
@@ -168,9 +166,7 @@ UserSchema.pre('save', async function(next) {
   next();
 });
 
-// ============================================
 // INSTANCE METHODS
-// ============================================
 
 // Compare password
 UserSchema.methods.comparePassword = async function(enteredPassword) {
@@ -264,9 +260,7 @@ UserSchema.methods.getPublicProfile = function() {
   };
 };
 
-// ============================================
 // STATIC METHODS
-// ============================================
 
 // Find user by email and validate password
 UserSchema.statics.findByCredentials = async function(email, password) {

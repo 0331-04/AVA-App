@@ -358,8 +358,8 @@ exports.verifyEmail = async (req, res, next) => {
 
     // Mark as verified
     user.isVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpire = undefined;
+    user.verifyEmailToken = undefined;
+    user.verifyEmailExpire = undefined;
     await user.save();
 
     res.status(200).json({
@@ -480,9 +480,7 @@ exports.refreshToken = async (req, res, next) => {
   }
 };
 
-// ============================================
 // HELPER FUNCTION
-// ============================================
 
 /**
  * Get token from model, create cookie and send response
