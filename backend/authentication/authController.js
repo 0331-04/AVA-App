@@ -20,6 +20,7 @@ exports.register = async (req, res, next) => {
       email,
       password,
       phone,
+      nic,
       address,
       role
     } = req.body;
