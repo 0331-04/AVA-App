@@ -153,6 +153,10 @@ const UserSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// ============================================
+// MIDDLEWARE
+// ============================================
+
 // Hash password before saving
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
@@ -164,12 +168,16 @@ UserSchema.pre('save', async function(next) {
   next();
 });
 
-// Compare password method
+// ============================================
+// INSTANCE METHODS
+// ============================================
+
+// Compare password
 UserSchema.methods.comparePassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate JWT Token
+// Generate JWT Access Token
 UserSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
     { id: this._id, role: this.role },
@@ -178,13 +186,23 @@ UserSchema.methods.getSignedJwtToken = function() {
   );
 };
 
+// Alias for authController
+UserSchema.methods.generateAuthToken = function() {
+  return this.getSignedJwtToken();
+};
+
 // Generate Refresh Token
 UserSchema.methods.getRefreshToken = function() {
   return jwt.sign(
-    { id: this._id },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRE }
+    { id: this._id, type: 'refresh' },
+    process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '30d' }
   );
+};
+
+// Alias for authController
+UserSchema.methods.generateRefreshToken = function() {
+  return this.getRefreshToken();
 };
 
 // Generate Email Verification Token
@@ -201,6 +219,11 @@ UserSchema.methods.getVerifyEmailToken = function() {
   return verifyToken;
 };
 
+// Alias for authController
+UserSchema.methods.generateEmailVerificationToken = function() {
+  return this.getVerifyEmailToken();
+};
+
 // Generate Password Reset Token
 UserSchema.methods.getResetPasswordToken = function() {
   const resetToken = crypto.randomBytes(20).toString('hex');
@@ -213,6 +236,11 @@ UserSchema.methods.getResetPasswordToken = function() {
   this.resetPasswordExpire = Date.now() + 60 * 60 * 1000; // 1 hour
   
   return resetToken;
+};
+
+// Alias for authController
+UserSchema.methods.generatePasswordResetToken = function() {
+  return this.getResetPasswordToken();
 };
 
 // Get public profile (exclude sensitive fields)
@@ -234,6 +262,56 @@ UserSchema.methods.getPublicProfile = function() {
     policyEndDate: this.policyEndDate,
     createdAt: this.createdAt
   };
+};
+
+// ============================================
+// STATIC METHODS
+// ============================================
+
+// Find user by email and validate password
+UserSchema.statics.findByCredentials = async function(email, password) {
+  const user = await this.findOne({ email }).select('+password');
+  
+  if (!user) {
+    throw new Error('Invalid email or password');
+  }
+  
+  if (!user.isActive) {
+    throw new Error('Your account has been deactivated. Please contact support.');
+  }
+  
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    throw new Error('Invalid email or password');
+  }
+  
+  return user;
+};
+
+// Find user by password reset token
+UserSchema.statics.findByResetToken = async function(token) {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  
+  return await this.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpire: { $gt: Date.now() }
+  });
+};
+
+// Find user by email verification token
+UserSchema.statics.findByVerificationToken = async function(token) {
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  
+  return await this.findOne({
+    verifyEmailToken: hashedToken,
+    verifyEmailExpire: { $gt: Date.now() }
+  });
 };
 
 module.exports = mongoose.model('User', UserSchema);
