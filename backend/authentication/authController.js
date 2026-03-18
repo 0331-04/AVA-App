@@ -42,6 +42,7 @@ exports.register = async (req, res, next) => {
       email,
       password,
       phone,
+      nic,
       address,
       role: role || 'customer' // Default to customer
     });
