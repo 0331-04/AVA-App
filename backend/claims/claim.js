@@ -353,11 +353,10 @@ const ClaimSchema = new mongoose.Schema({
 
 // INDEXES
 ClaimSchema.index({ userId: 1, submittedAt: -1 });
-ClaimSchema.index({ claimNumber: 1 });
 ClaimSchema.index({ status: 1 });
 ClaimSchema.index({ assignedTo: 1 });
 ClaimSchema.index({ 'vehicle.licensePlate': 1 });
-
+//ClaimSchema.index({ claimNumber: 1 });
 
 // PRE-SAVE MIDDLEWARE
 
