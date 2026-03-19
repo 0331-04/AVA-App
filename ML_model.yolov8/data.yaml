@@ -1,0 +1,13 @@
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 5
+names: ['broken_glass', 'broken_light', 'dent', 'objects', 'scrach']
+
+roboflow:
+  workspace: henukas-workspace
+  project: my-first-project-ehnuc
+  version: 2
+  license: Private
+  url: https://app.roboflow.com/henukas-workspace/my-first-project-ehnuc/2

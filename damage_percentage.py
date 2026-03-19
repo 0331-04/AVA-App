@@ -11,12 +11,12 @@ BOX_SHRINK_FACTOR = 0.35    # Compensate for YOLO rectangle overestimation
 # ----------------------------
 # Load trained model
 # ----------------------------
-model = YOLO("My First Project.v1i.yolov8/runs/detect/train2/weights/best.pt")
+model = YOLO("ML_model.yolov8/runs/detect/train2/weights/best.pt")
 
 # ----------------------------
 # Image path
 # ----------------------------
-image_path = "My First Project.v1i.yolov8/valid/images/20_jpeg.rf.9ff685a955cd70b4a99f43e78cf90dd6.jpg"
+image_path = "ML_model.yolov8/valid/images/17_jpeg.rf.e6d2e8c4544c9edc4028bb24acbd9014.jpg"
 
 # ----------------------------
 # Load image
