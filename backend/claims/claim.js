@@ -361,7 +361,7 @@ ClaimSchema.index({ 'vehicle.licensePlate': 1 });
 // PRE-SAVE MIDDLEWARE
 
 // Generate unique claim number
-ClaimSchema.pre('save', async function(next) {
+ClaimSchema.pre('validate', async function() {
   if (this.isNew && !this.claimNumber) {
     const year = new Date().getFullYear();
     const count = await this.constructor.countDocuments();
@@ -369,7 +369,6 @@ ClaimSchema.pre('save', async function(next) {
   }
   
   this.lastUpdatedAt = Date.now();
-  next();
 });
 
 // INSTANCE METHODS
