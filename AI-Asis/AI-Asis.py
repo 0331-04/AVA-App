@@ -123,11 +123,8 @@ def start_assistant():
     damage_type = ask_damage_type_console()
 
     photo_steps = [
-        ("Take a FRONT side photo of the vehicle.", "front.jpg"),
-        ("Take a LEFT side photo of the vehicle.", "left.jpg"),
-        ("Take a RIGHT side photo of the vehicle.", "right.jpg"),
-        ("Take a REAR side photo of the vehicle.", "rear.jpg"),
-        ("Take a CLOSE UP photo of the damaged area.", "damage.jpg")
+        ("Take a FRONT side photo of the damage area.", "front.jpg"),
+        
     ]
 
     save_dir="accident_photos"
