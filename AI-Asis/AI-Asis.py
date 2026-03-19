@@ -80,16 +80,16 @@ def take_photo_step(step_name, photo_name,save_dir):
         if image_path is None:
             continue
 
+        if is_too_dark(image_path):
+            speak("The photo os too dark. Please use flash and retake.")
+            os.remove(image_path)
+            continue  
+
 
         if is_blurry(image_path):
             speak("The photo is blurry. Please retake it clearly.")
             os.remove(image_path)
             continue
-
-        if is_too_dark(image_path):
-            speak("The photo os too dark. Please use flash and retake.")
-            os.remove(image_path)
-            continue  
 
         img= cv2.imread(image_path)
 
@@ -100,7 +100,7 @@ def take_photo_step(step_name, photo_name,save_dir):
             cv2.destroyAllWindows()
 
             if key == 13:
-                timestamp = datetime.now().strftime("%Y-%m-%D %H:%M:%S")
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 gps_location = "N/A"
 
                 with open(os.path.join(save_dir,"photo_log_txt"), "a") as f:
