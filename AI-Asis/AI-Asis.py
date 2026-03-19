@@ -22,16 +22,6 @@ def is_too_dark(image_path, threshold=40):
     return image.mean() < threshold
     
 
-def ask_damage_type_console():
-    valid_types = ["scratch", "dent", "broken light", "glass damage"]
-    while True:
-        damage = input("What is the damage type? (scratch/dent/broken light/glass damage): ").lower()
-        if damage in valid_types:
-            speak(f"You selected {damage}.")
-            return damage
-        else:
-            speak("Invalid damage type. Please type one of: scratch, dent, broken light, glass damage.")
-
 def capturePhoto (photo_name, save_dir):
 
     if save_dir is None:
@@ -120,7 +110,6 @@ def start_assistant():
     speak("Please make sure you are safe and the vehicle is stopped.")
     speak("I will guide you to take photos for damage estimation.")
 
-    damage_type = ask_damage_type_console()
 
     photo_steps = [
         ("Take a FRONT side photo of the damage area.", "front.jpg"),
