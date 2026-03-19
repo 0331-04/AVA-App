@@ -372,9 +372,7 @@ ClaimSchema.pre('save', async function(next) {
   next();
 });
 
-// ============================================
 // INSTANCE METHODS
-// ============================================
 
 /**
  * Add status change to history
