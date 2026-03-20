@@ -2,11 +2,19 @@ import time
 import cv2
 import os
 from datetime import datetime
+import geocoder
 
 
 def speak(text):
     print("AI:", text)
     time.sleep(1)
+
+def get_location():
+    g = geocoder.ip ('me')
+    if g.ok:
+        return f"{g.city}, {g.country}"
+    else:
+        return "Unknown location"
 
 def is_blurry(image_path, threshold=100):
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -29,7 +37,19 @@ def capturePhoto (photo_name, save_dir):
 
     os.makedirs(save_dir, exist_ok=True)
     save_path = None
+
     cap =cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    time.sleep(2)
+
+    if not cap.isOpened():
+        speak("Retrying camera...")
+        cap = cv2.VideoCapture(0)
+        time.sleep(2)
+
+    if not cap.isOpened():
+        speak ("Camera could not be opened.")
+        return None
+    
     speak("Camera opened. Press C to capture photo.")
     
 
@@ -86,17 +106,27 @@ def take_photo_step(step_name, photo_name,save_dir):
         if img is not None:
             cv2.imshow("Photo Preview - Enter to Keep / Delete to retake", img)
             speak("Preveiew shown. Press Enter to keep the photo or DELETE to retake")
+
             key = cv2.waitKey(0)
             cv2.destroyAllWindows()
 
             if key == 13:
+
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                gps_location = "N/A"
+                location=get_location()
 
-                with open(os.path.join(save_dir,"photo_log_txt"), "a") as f:
-                    f.write(f"{photo_name} captired at {timestamp}, GPS: {gps_location}\n")
+                cv2.putText(img, timestamp, (20, 30),
+                            cv2.Font_HERSHEY_SIMPLEX, 0.7,(0,255,0), 2)
+                
+                cv2.putText(img, location, (20,60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,255,0), 2)
+                
+                cv2.imwrite(image_path, img)
 
-                speak ("Photo accepted and saved.")
+                with open(os.path.join(save_dir, "photo_log.txt" ), "a") as f:
+                    f.write(f"{photo_name} captured at {timestamp}, Location: {location}\n")
+
+                speak("photo accecepted and saved")
                 break
 
             elif key == 127:
@@ -108,7 +138,7 @@ def take_photo_step(step_name, photo_name,save_dir):
 def start_assistant():
     speak("Hello. I am your accident assistance AI.")
     speak("Please make sure you are safe and the vehicle is stopped.")
-    speak("I will guide you to take photos for damage estimation.")
+    speak("I will guide you to take photo for damage estimation.")
 
 
     photo_steps = [
@@ -121,8 +151,8 @@ def start_assistant():
     for step,filename in photo_steps:
         take_photo_step(step, filename, save_dir)
 
-    speak("All photos have been captured successfully.")
-    speak("You may now upload these images for quick estimate.")
+    speak("Photo has been captured successfully.")
+    speak("You may now upload this image for quick estimate.")
     speak("Thank you. Drive safe.")
 
 if __name__ == "__main__":
