@@ -16,7 +16,7 @@ def get_location():
     else:
         return "Unknown location"
 
-def is_blurry(image_path, threshold=100):
+def is_blurry(image_path, threshold=30):
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if image is None:
         return True
@@ -116,7 +116,7 @@ def take_photo_step(step_name, photo_name,save_dir):
                 location=get_location()
 
                 cv2.putText(img, timestamp, (20, 30),
-                            cv2.Font_HERSHEY_SIMPLEX, 0.7,(0,255,0), 2)
+                            cv2.FONT_HERSHEY_COMPLEX, 0.7,(0,255,0), 2)
                 
                 cv2.putText(img, location, (20,60),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7,(0,255,0), 2)
