@@ -16,7 +16,7 @@ model = YOLO("ML_model.yolov8/runs/detect/train2/weights/best.pt")
 # ----------------------------
 # Image path
 # ----------------------------
-image_path = "ML_model.yolov8/valid/images/17_jpeg.rf.e6d2e8c4544c9edc4028bb24acbd9014.jpg"
+image_path = "ML_model.yolov8/valid/images/49_jpeg.rf.c3c53cb427a4a3bd3c3842af3eded488.jpg"
 
 # ----------------------------
 # Load image
