@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 
 # Load model
-model = YOLO("My First Project.v1i.yolov8/runs/detect/train/weights/best.pt")
+model = YOLO("ML_model.yolov8/runs/detect/train6/weights/best.pt")
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
