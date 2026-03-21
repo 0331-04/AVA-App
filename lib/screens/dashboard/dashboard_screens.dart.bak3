@@ -9,11 +9,11 @@ import '../../services/auth_service.dart';
 
 
 class DashboardScreen extends StatefulWidget {
-  final String? accessToken;
+  final String accessToken;
 
   const DashboardScreen({
     super.key,
-    this.accessToken,
+    required this.accessToken,
   });
 
   @override
@@ -34,17 +34,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadUserProfile() async {
-    if (widget.accessToken == null || widget.accessToken!.isEmpty) {
-      if (!mounted) return;
-      setState(() {
-        _userName = 'User';
-      });
-      return;
-    }
-
     try {
       final result = await _authService.getMe(
-        accessToken: widget.accessToken!,
+        accessToken: widget.accessToken,
       );
 
       final data = result['data'] ?? {};
@@ -95,11 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goToClaimHistory() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ClaimHistoryScreen(
-          accessToken: widget.accessToken,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const ClaimHistoryScreen()),
     );
   }
 

@@ -5,16 +5,10 @@ import '../claims/claim_status_screen.dart';
 import '../profile/profile_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../claims/claim_detail_screen.dart';
-import '../../services/auth_service.dart';
 
 
 class DashboardScreen extends StatefulWidget {
-  final String? accessToken;
-
-  const DashboardScreen({
-    super.key,
-    this.accessToken,
-  });
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -23,50 +17,11 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   static const Color primaryBlue = Color(0xFF1A56DB);
 
-  final AuthService _authService = AuthService();
   int _unreadNotifications = 3;
-  String _userName = 'Loading...';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserProfile();
-  }
-
-  Future<void> _loadUserProfile() async {
-    if (widget.accessToken == null || widget.accessToken!.isEmpty) {
-      if (!mounted) return;
-      setState(() {
-        _userName = 'User';
-      });
-      return;
-    }
-
-    try {
-      final result = await _authService.getMe(
-        accessToken: widget.accessToken!,
-      );
-
-      final data = result['data'] ?? {};
-      final firstName = (data['firstName'] ?? '').toString().trim();
-      final lastName = (data['lastName'] ?? '').toString().trim();
-      final fullName = '$firstName $lastName'.trim();
-
-      if (!mounted) return;
-      setState(() {
-        _userName = fullName.isEmpty ? 'User' : fullName;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _userName = 'User';
-      });
-    }
-  }
 
   Future<void> _onRefresh() async {
-    await _loadUserProfile();
-    if (!mounted) return;
+    // TODO: Call backend API here to refresh claims + stats
+    await Future.delayed(const Duration(seconds: 2));
     setState(() {});
   }
 
@@ -95,11 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goToClaimHistory() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ClaimHistoryScreen(
-          accessToken: widget.accessToken,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const ClaimHistoryScreen()),
     );
   }
 
@@ -119,7 +70,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _Header(
             greeting: _greeting,
             greetingIcon: _greetingIcon,
-            userName: _userName,
             unreadNotifications: _unreadNotifications,
             onNotificationTap: () {
               Navigator.push(
@@ -172,14 +122,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class _Header extends StatelessWidget {
   final String greeting;
   final IconData greetingIcon;
-  final String userName;
   final int unreadNotifications;
   final VoidCallback onNotificationTap;
 
   const _Header({
     required this.greeting,
     required this.greetingIcon,
-    required this.userName,
     required this.unreadNotifications,
     required this.onNotificationTap,
   });
@@ -230,9 +178,10 @@ class _Header extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Text(
-                        userName,
-                        style: const TextStyle(
+                      // TODO: Replace with real user name from auth
+                      const Text(
+                        'John Doe',
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 17,
                           fontFamily: 'WorkSans',
