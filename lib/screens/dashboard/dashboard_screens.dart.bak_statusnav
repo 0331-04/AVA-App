@@ -110,11 +110,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _goToClaimStatus() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ClaimStatusScreen(
-          accessToken: widget.accessToken,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const ClaimStatusScreen()),
     );
   }
 
