@@ -442,11 +442,7 @@ class _LoginFormState extends State<_LoginForm> {
       setState(() => _isLoading = false);
 
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => DashboardScreen(
-            accessToken: result['accessToken'],
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
       );
     } catch (e) {
       if (!mounted) return;
@@ -711,11 +707,7 @@ class _SignupFormState extends State<_SignupForm> {
       );
 
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => DashboardScreen(
-            accessToken: result['accessToken'],
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
       );
     } catch (e) {
       if (!mounted) return;

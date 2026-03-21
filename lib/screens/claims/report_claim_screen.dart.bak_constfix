@@ -1714,7 +1714,7 @@ class _Step4CompleteState extends State<_Step4Complete>
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: const [
                   Icon(Icons.assignment_outlined,
                       color: Color(0xFF004AAD), size: 18),
                   SizedBox(width: 8),
@@ -1809,7 +1809,7 @@ class _BottomBar extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: onBack,
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.arrow_back_ios,
                         size: 12, color: Color(0xFF0E0505)),

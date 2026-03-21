@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../claims/claim_detail_screen.dart';
-import '../../services/claim_service.dart';
 
 
 // ── Claim data model
@@ -28,95 +27,64 @@ class ClaimRecord {
   });
 }
 
-double _progressFromStatus(String status) {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 0.20;
-    case 'documents_review':
-      return 0.40;
-    case 'damage_assessment':
-      return 0.60;
-    case 'investigation':
-      return 0.75;
-    case 'approved':
-    case 'settled':
-    case 'closed':
-      return 1.0;
-    case 'rejected':
-      return 1.0;
-    case 'disputed':
-      return 0.85;
-    default:
-      return 0.30;
-  }
-}
-
-String _displayStatus(String status) {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 'Submitted';
-    case 'documents_review':
-      return 'In Review';
-    case 'damage_assessment':
-      return 'Assessment';
-    case 'investigation':
-      return 'In Review';
-    case 'approved':
-      return 'Approved';
-    case 'rejected':
-      return 'Rejected';
-    case 'settled':
-    case 'closed':
-      return 'Payment Processing';
-    case 'disputed':
-      return 'In Review';
-    default:
-      return status;
-  }
-}
-
-String _formatDate(dynamic value) {
-  if (value == null) return 'Unknown';
-  final raw = value.toString();
-  final parsed = DateTime.tryParse(raw);
-  if (parsed == null) return raw;
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  return '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
-}
-
-ClaimRecord _claimFromApi(Map<String, dynamic> c) {
-  final vehicle = (c['vehicle'] as Map?) ?? {};
-  final make = (vehicle['make'] ?? '').toString();
-  final model = (vehicle['model'] ?? '').toString();
-  final year = (vehicle['year'] ?? '').toString();
-  final plate = (vehicle['licensePlate'] ?? '').toString();
-  final incidentType = (c['incidentType'] ?? 'Unknown damage').toString();
-  final estimatedAmount = c['estimatedAmount'];
-  final status = (c['status'] ?? 'pending').toString();
-  final photos = c['photos'];
-  final claimNumber = (c['claimNumber'] ?? c['id'] ?? '').toString();
-
-  final vehicleText = [make, model, year].where((e) => e.trim().isNotEmpty).join(' ');
-  final amount = estimatedAmount is num
-      ? estimatedAmount.toInt()
-      : int.tryParse(estimatedAmount?.toString() ?? '') ?? 0;
-  final photoCount = photos is List ? photos.length : 0;
-
-  return ClaimRecord(
-    claimId: claimNumber.isEmpty ? 'Unknown' : '#$claimNumber',
-    vehicle: vehicleText.isEmpty ? 'Unknown Vehicle' : vehicleText,
-    licensePlate: plate.isEmpty ? 'N/A' : plate,
-    damageType: incidentType.replaceAll('_', ' '),
-    submittedDate: _formatDate(c['submittedAt']),
-    estimateLKR: amount,
-    progress: _progressFromStatus(status),
-    status: _displayStatus(status),
-    photosUploaded: photoCount,
-  );
-}
+// TODO: Replace with real data from your backend API
+final List<ClaimRecord> _mockClaims = [
+  ClaimRecord(
+    claimId: '#CLM-1042',
+    vehicle: 'Toyota Camry 2022',
+    licensePlate: 'ABC-1234',
+    damageType: 'Front Bumper Scratch',
+    submittedDate: 'Nov 20, 2024',
+    estimateLKR: 375000,
+    progress: 1.0,
+    status: 'Payment Processing',
+    photosUploaded: 4,
+  ),
+  ClaimRecord(
+    claimId: '#CLM-1041',
+    vehicle: 'Honda Civic 2020',
+    licensePlate: 'WP-CAB-5678',
+    damageType: 'Rear Bumper Dent',
+    submittedDate: 'Oct 14, 2024',
+    estimateLKR: 520000,
+    progress: 0.75,
+    status: 'In Review',
+    photosUploaded: 3,
+  ),
+  ClaimRecord(
+    claimId: '#CLM-1039',
+    vehicle: 'Nissan X-Trail 2021',
+    licensePlate: 'NW-2233',
+    damageType: 'Left Side Panel Damage',
+    submittedDate: 'Sep 3, 2024',
+    estimateLKR: 980000,
+    progress: 1.0,
+    status: 'Approved',
+    photosUploaded: 5,
+  ),
+  ClaimRecord(
+    claimId: '#CLM-1036',
+    vehicle: 'Toyota Prius 2019',
+    licensePlate: 'WP-PKQ-9988',
+    damageType: 'Windscreen Crack',
+    submittedDate: 'Aug 11, 2024',
+    estimateLKR: 145000,
+    progress: 1.0,
+    status: 'Rejected',
+    photosUploaded: 2,
+  ),
+  ClaimRecord(
+    claimId: '#CLM-1033',
+    vehicle: 'Suzuki Alto 2023',
+    licensePlate: 'SP-4421',
+    damageType: 'Right Side Mirror',
+    submittedDate: 'Jul 29, 2024',
+    estimateLKR: 48000,
+    progress: 0.4,
+    status: 'In Review',
+    photosUploaded: 3,
+  ),
+];
 
 // ── Convert ClaimRecord to ClaimDetail for navigation ────────
 ClaimDetail _recordToDetail(ClaimRecord r) {
@@ -154,36 +122,23 @@ ClaimDetail _recordToDetail(ClaimRecord r) {
 }
 
 class ClaimHistoryScreen extends StatefulWidget {
-  final String? accessToken;
-
-  const ClaimHistoryScreen({
-    super.key,
-    this.accessToken,
-  });
+  const ClaimHistoryScreen({super.key});
 
   @override
   State<ClaimHistoryScreen> createState() => _ClaimHistoryScreenState();
 }
 
 class _ClaimHistoryScreenState extends State<ClaimHistoryScreen> {
-  final ClaimService _claimService = ClaimService();
   String _selectedFilter = 'All';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  List<ClaimRecord> _claims = [];
-  bool _isLoading = true;
-  String? _errorMessage;
 
   static const _filters = ['All', 'Active', 'Completed', 'Rejected'];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadClaims();
-  }
-
+  // Active = In Review or Payment Processing
+  // Completed = Approved or Payment Processing (100%)
   List<ClaimRecord> get _filteredClaims {
-    return _claims.where((c) {
+    return _mockClaims.where((c) {
       final matchesFilter = _selectedFilter == 'All' ||
           (_selectedFilter == 'Active' &&
               (c.status == 'In Review' || c.status == 'Submitted')) ||
@@ -203,40 +158,10 @@ class _ClaimHistoryScreenState extends State<ClaimHistoryScreen> {
     }).toList();
   }
 
-  Future<void> _loadClaims() async {
-    if (widget.accessToken == null || widget.accessToken!.isEmpty) {
-      if (!mounted) return;
-      setState(() {
-        _claims = [];
-        _isLoading = false;
-        _errorMessage = 'No access token found';
-      });
-      return;
-    }
-
-    try {
-      final result = await _claimService.getClaims(
-        accessToken: widget.accessToken!,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _claims = result.map(_claimFromApi).toList();
-        _isLoading = false;
-        _errorMessage = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _claims = [];
-        _isLoading = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
-  }
-
   Future<void> _onRefresh() async {
-    await _loadClaims();
+    // TODO: Call your backend API to refresh claims list
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() {});
   }
 
   @override
@@ -366,36 +291,27 @@ class _ClaimHistoryScreenState extends State<ClaimHistoryScreen> {
 
           // Claims list 
           Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF004AAD),
+            child: RefreshIndicator(
+              color: const Color(0xFF004AAD),
+              onRefresh: _onRefresh,
+              child: claims.isEmpty
+                  ? _EmptyState(filter: _selectedFilter)
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      itemCount: claims.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (_, i) => _ClaimCard(
+                        claim: claims[i],
+                        onTap: () {
+                          final detail = _recordToDetail(claims[i]);
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => ClaimDetailScreen(claim: detail),
+                          ));
+                        },
+                      ),
                     ),
-                  )
-                : RefreshIndicator(
-                    color: const Color(0xFF004AAD),
-                    onRefresh: _onRefresh,
-                    child: claims.isEmpty
-                        ? _EmptyState(
-                            filter: _selectedFilter,
-                            message: _errorMessage,
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                            itemCount: claims.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (_, i) => _ClaimCard(
-                              claim: claims[i],
-                              onTap: () {
-                                final detail = _recordToDetail(claims[i]);
-                                Navigator.push(context, MaterialPageRoute(
-                                  builder: (_) => ClaimDetailScreen(claim: detail),
-                                ));
-                              },
-                            ),
-                          ),
-                  ),
+            ),
           ),
         ],
       ),
@@ -858,11 +774,7 @@ class _InfoRow extends StatelessWidget {
 // ----------------------------------------------------------
 class _EmptyState extends StatelessWidget {
   final String filter;
-  final String? message;
-  const _EmptyState({
-    required this.filter,
-    this.message,
-  });
+  const _EmptyState({required this.filter});
 
   @override
   Widget build(BuildContext context) {
@@ -888,11 +800,9 @@ class _EmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                message ??
-                    (filter == 'All'
-                        ? 'Your claim history will appear here'
-                        : 'Try a different filter or search term'),
-                textAlign: TextAlign.center,
+                filter == 'All'
+                    ? 'Your claim history will appear here'
+                    : 'Try a different filter or search term',
                 style: TextStyle(
                   fontSize: 12,
                   fontFamily: 'Poppins',
