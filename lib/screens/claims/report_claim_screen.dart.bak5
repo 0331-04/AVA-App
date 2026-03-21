@@ -1,24 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../widgets/car_damage_selector.dart';
 import '../../widgets/loading_overlay.dart';
-import '../../services/claim_service.dart';
 import '../dashboard/dashboard_screens.dart';
 
 
 class ReportClaimScreen extends StatefulWidget {
-  final String? accessToken;
-
-  const ReportClaimScreen({
-    super.key,
-    this.accessToken,
-  });
+  const ReportClaimScreen({super.key});
 
   @override
   State<ReportClaimScreen> createState() => _ReportClaimScreenState();
 }
 
 class _ReportClaimScreenState extends State<ReportClaimScreen> {
-  final ClaimService _claimService = ClaimService();
   int _currentStep = 0;
 
   // Step 1 state
@@ -27,15 +20,6 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
   String _claimReference = '';
   bool _locationCaptured = false;
   String _locationText = '';
-
-  final TextEditingController _makeController = TextEditingController();
-  final TextEditingController _modelController = TextEditingController();
-  final TextEditingController _yearController = TextEditingController();
-  final TextEditingController _plateController = TextEditingController();
-  final TextEditingController _estimateController = TextEditingController();
-  String _incidentType = 'collision';
-  DateTime _incidentDate = DateTime.now();
-  String? _submittedClaimNumber;
 
   // Step 2 state
   // TODO: Replace String with File when using real camera/gallery
@@ -105,18 +89,9 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
           claimReference: _claimReference,
           locationCaptured: _locationCaptured,
           locationText: _locationText,
-          makeController: _makeController,
-          modelController: _modelController,
-          yearController: _yearController,
-          plateController: _plateController,
-          estimateController: _estimateController,
-          incidentType: _incidentType,
-          incidentDate: _incidentDate,
           onAreaSelected: (a) => setState(() => _selectedArea = a),
           onDescriptionChanged: (v) => setState(() => _damageDescription = v),
           onReferenceChanged: (v) => setState(() => _claimReference = v),
-          onIncidentTypeChanged: (v) => setState(() => _incidentType = v),
-          onIncidentDateChanged: (v) => setState(() => _incidentDate = v),
           onLocationCapture: () {
             // TODO: Replace with real GPS: geolocator package
             
@@ -125,14 +100,7 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
               _locationText = '6.0535° N, 80.2210° E — Galle, Sri Lanka';
             });
           },
-          onProceed: (_selectedArea != null &&
-                  _makeController.text.trim().isNotEmpty &&
-                  _modelController.text.trim().isNotEmpty &&
-                  _yearController.text.trim().isNotEmpty &&
-                  _plateController.text.trim().isNotEmpty &&
-                  _estimateController.text.trim().isNotEmpty)
-              ? _nextStep
-              : null,
+          onProceed: _selectedArea != null ? _nextStep : null,
         );
       case 1:
         return _Step2AICapture(
@@ -152,57 +120,17 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
           claimReference: _claimReference,
           locationText: _locationText,
           onSubmit: () async {
-                if (widget.accessToken == null || widget.accessToken!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Missing access token')),
-                  );
-                  return;
-                }
-
-                try {
-                  LoadingOverlay.show(context, message: 'Submitting your claim...');
-
-                  final result = await _claimService.submitClaim(
-                    accessToken: widget.accessToken!,
-                    vehicle: {
-                      'make': _makeController.text.trim(),
-                      'model': _modelController.text.trim(),
-                      'year': int.tryParse(_yearController.text.trim()) ?? DateTime.now().year,
-                      'licensePlate': _plateController.text.trim(),
-                    },
-                    incidentDate: _incidentDate.toIso8601String(),
-                    incidentDescription: _damageDescription.trim().isEmpty
-                        ? 'Damage reported on ${_selectedArea ?? 'Unknown area'}'
-                        : _damageDescription.trim(),
-                    incidentType: _incidentType,
-                    estimatedAmount: num.tryParse(_estimateController.text.trim()) ?? 0,
-                    incidentLocation: {
-                      'address': _locationText,
-                      'city': 'Sri Lanka',
-                    },
-                  );
-
-                  final data = result['data'] ?? {};
-                  _submittedClaimNumber = (data['claimNumber'] ?? '').toString();
-
-                  if (mounted) {
-                    LoadingOverlay.hide(context);
-                    _nextStep();
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    LoadingOverlay.hide(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                    );
-                  }
+                LoadingOverlay.show(context, message: 'Submitting your claim...');
+                await Future.delayed(const Duration(seconds: 2)); // TODO: replace with real API call
+                if (mounted) {
+                  LoadingOverlay.hide(context);
+                  _nextStep();
                 }
               },
         );
       case 3:
         return _Step4Complete(
           key: const ValueKey(3),
-          claimNumber: _submittedClaimNumber,
           onNewClaim: () => setState(() {
             _currentStep = 0;
             _selectedArea = null;
@@ -210,24 +138,12 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
             _claimReference = '';
             _locationCaptured = false;
             _locationText = '';
-            _submittedClaimNumber = null;
-            _makeController.clear();
-            _modelController.clear();
-            _yearController.clear();
-            _plateController.clear();
-            _estimateController.clear();
-            _incidentType = 'collision';
-            _incidentDate = DateTime.now();
             _capturedPhotos.updateAll((_, __) => null);
           }),
           onGoHome: () {
             final nav = Navigator.of(context);
             nav.pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => DashboardScreen(
-                  accessToken: widget.accessToken,
-                ),
-              ),
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
             );
           },
         );
@@ -489,18 +405,9 @@ class _Step1SelectArea extends StatelessWidget {
   final String claimReference;
   final bool locationCaptured;
   final String locationText;
-  final TextEditingController makeController;
-  final TextEditingController modelController;
-  final TextEditingController yearController;
-  final TextEditingController plateController;
-  final TextEditingController estimateController;
-  final String incidentType;
-  final DateTime incidentDate;
   final ValueChanged<String> onAreaSelected;
   final ValueChanged<String> onDescriptionChanged;
   final ValueChanged<String> onReferenceChanged;
-  final ValueChanged<String> onIncidentTypeChanged;
-  final ValueChanged<DateTime> onIncidentDateChanged;
   final VoidCallback onLocationCapture;
   final VoidCallback? onProceed;
 
@@ -511,18 +418,9 @@ class _Step1SelectArea extends StatelessWidget {
     required this.claimReference,
     required this.locationCaptured,
     required this.locationText,
-    required this.makeController,
-    required this.modelController,
-    required this.yearController,
-    required this.plateController,
-    required this.estimateController,
-    required this.incidentType,
-    required this.incidentDate,
     required this.onAreaSelected,
     required this.onDescriptionChanged,
     required this.onReferenceChanged,
-    required this.onIncidentTypeChanged,
-    required this.onIncidentDateChanged,
     required this.onLocationCapture,
     required this.onProceed,
   });
@@ -556,205 +454,6 @@ class _Step1SelectArea extends StatelessWidget {
           CarDamageSelector(
             selectedArea: selectedArea,
             onAreaSelected: onAreaSelected,
-          ),
-          const SizedBox(height: 18),
-
-          // Vehicle details
-          const Text(
-            'Vehicle Details',
-            style: TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: makeController,
-            decoration: InputDecoration(
-              hintText: 'Vehicle make (e.g. Toyota)',
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.all(14),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF978B8B)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF004AAD), width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          TextFormField(
-            controller: modelController,
-            decoration: InputDecoration(
-              hintText: 'Vehicle model (e.g. Camry)',
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.all(14),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF978B8B)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF004AAD), width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: yearController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'Year',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.all(14),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF978B8B)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF004AAD), width: 1.5),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextFormField(
-                  controller: plateController,
-                  decoration: InputDecoration(
-                    hintText: 'Plate number',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.all(14),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF978B8B)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF004AAD), width: 1.5),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          const Text(
-            'Incident Type',
-            style: TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            value: incidentType,
-            items: const [
-              DropdownMenuItem(value: 'collision', child: Text('Collision')),
-              DropdownMenuItem(value: 'theft', child: Text('Theft')),
-              DropdownMenuItem(value: 'vandalism', child: Text('Vandalism')),
-              DropdownMenuItem(value: 'natural_disaster', child: Text('Natural Disaster')),
-              DropdownMenuItem(value: 'hit_and_run', child: Text('Hit and Run')),
-              DropdownMenuItem(value: 'fire', child: Text('Fire')),
-              DropdownMenuItem(value: 'other', child: Text('Other')),
-            ],
-            onChanged: (v) {
-              if (v != null) onIncidentTypeChanged(v);
-            },
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF978B8B)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF004AAD), width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          const Text(
-            'Incident Date',
-            style: TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: incidentDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now(),
-              );
-              if (picked != null) onIncidentDateChanged(picked);
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF978B8B)),
-              ),
-              child: Text(
-                '${incidentDate.year}-${incidentDate.month.toString().padLeft(2, '0')}-${incidentDate.day.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          const Text(
-            'Estimated Amount',
-            style: TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: estimateController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: 'Enter estimated amount',
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.all(14),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF978B8B)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF004AAD), width: 1.5),
-              ),
-            ),
           ),
           const SizedBox(height: 18),
 
@@ -1614,13 +1313,11 @@ class _SummaryRow extends StatelessWidget {
 //  STEP 4 — CLAIM SUBMISSION COMPLETE
 // ----------------------------------------------------------
 class _Step4Complete extends StatefulWidget {
-  final String? claimNumber;
   final VoidCallback onNewClaim;
   final VoidCallback onGoHome;
 
   const _Step4Complete({
     super.key,
-    this.claimNumber,
     required this.onNewClaim,
     required this.onGoHome,
   });
@@ -1714,15 +1411,15 @@ class _Step4CompleteState extends State<_Step4Complete>
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: const [
                   Icon(Icons.assignment_outlined,
                       color: Color(0xFF004AAD), size: 18),
                   SizedBox(width: 8),
                   Text('Claim ID: ',
                       style: TextStyle(
                           fontSize: 13, fontFamily: 'Roboto')),
-                  Text(widget.claimNumber ?? 'Generated',
-                      style: const TextStyle(
+                  Text('#CLM-1043',
+                      style: TextStyle(
                         fontSize: 13,
                         fontFamily: 'Roboto',
                         fontWeight: FontWeight.w700,
@@ -1809,7 +1506,7 @@ class _BottomBar extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: onBack,
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.arrow_back_ios,
                         size: 12, color: Color(0xFF0E0505)),
