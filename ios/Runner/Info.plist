@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>AVA-Inspec needs camera access to capture accident photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>AVA-Inspec needs photo library access to let you choose accident photos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>AVA-Inspec needs permission to save processed claim photos when required.</string>
 </dict>
 </plist>

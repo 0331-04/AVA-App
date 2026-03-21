@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../widgets/car_damage_selector.dart';
 import '../../widgets/loading_overlay.dart';
 import '../../services/claim_service.dart';
@@ -40,9 +41,7 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
   // Step 2 state
   // TODO: Replace String with File when using real camera/gallery
   final Map<String, String?> _capturedPhotos = {
-    'Close-up': null,
-    'Midrange': null,
-    'Wideangle': null,
+    'Damage Photo': null,
   };
 
   bool get _hasAtLeastOnePhoto =>
@@ -180,6 +179,7 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
                       'address': _locationText,
                       'city': 'Sri Lanka',
                     },
+                    photoPath: _capturedPhotos['Damage Photo'],
                   );
 
                   final data = result['data'] ?? {};
@@ -982,23 +982,14 @@ class _Step2AICapture extends StatefulWidget {
 
 class _Step2AICaptureState extends State<_Step2AICapture>
     with SingleTickerProviderStateMixin {
+  final ImagePicker _picker = ImagePicker();
   int _photoIndex = 0;
 
   static const _photoSteps = [
     {
-      'type':  'Close-up',
-      'label': 'Close-up of damage',
-      'tip':   'Place the damage in the center of the frame',
-    },
-    {
-      'type':  'Midrange',
-      'label': 'Mid-range shot (1-2m)',
-      'tip':   'Step back 1-2 meters and keep the car centered',
-    },
-    {
-      'type':  'Wideangle',
-      'label': 'Wide angle shot',
-      'tip':   'Capture the full side of the vehicle',
+      'type':  'Damage Photo',
+      'label': 'Clear damage photo',
+      'tip':   'Capture one clear, well-lit image showing the full damaged area.',
     },
   ];
 
@@ -1037,24 +1028,46 @@ class _Step2AICaptureState extends State<_Step2AICapture>
     super.dispose();
   }
 
-  void _simulateCapture(String source) {
-    // TODO: Replace with real camera/gallery integration
-    
-    final type = _photoSteps[_photoIndex]['type']!;
-    widget.onPhotoCaptured(type, 'captured_${type}_from_$source');
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        imageQuality: 85,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            '${_photoSteps[_photoIndex]["label"]} captured from $source!'),
-        duration: const Duration(seconds: 1),
-        backgroundColor: Colors.green.shade700,
-      ),
-    );
+      if (image == null) return;
 
-    // Advance to next uncaptured slot
-    if (_photoIndex < _photoSteps.length - 1) {
-      setState(() => _photoIndex++);
+      final type = _photoSteps[_photoIndex]['type']!;
+      widget.onPhotoCaptured(type, image.path);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${_photoSteps[_photoIndex]["label"]} captured successfully!',
+          ),
+          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+
+      if (_photoIndex < _photoSteps.length - 1) {
+        setState(() => _photoIndex++);
+      } else {
+        setState(() {});
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            source == ImageSource.camera
+                ? 'Camera is not available on the simulator. Please use Gallery or test on a real device.'
+                : 'Could not open gallery.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
     }
   }
 
@@ -1098,7 +1111,7 @@ class _Step2AICaptureState extends State<_Step2AICapture>
                   ),
                 ),
                 child: Text(
-                  '$_capturedCount/3',
+                  '$_capturedCount/1',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -1193,7 +1206,7 @@ class _Step2AICaptureState extends State<_Step2AICapture>
                         Text.rich(
                           TextSpan(children: [
                             TextSpan(
-                              text: 'Photo ${_photoIndex + 1} of 3: ',
+                              text: 'Required photo: ',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
@@ -1245,7 +1258,7 @@ class _Step2AICaptureState extends State<_Step2AICapture>
           children: [
             // Camera button
             GestureDetector(
-              onTap: () => _simulateCapture('camera'),
+              onTap: () => _pickImage(ImageSource.camera),
               child: Column(
                 children: [
                   Container(
@@ -1282,7 +1295,7 @@ class _Step2AICaptureState extends State<_Step2AICapture>
 
             // Gallery button
             GestureDetector(
-              onTap: () => _simulateCapture('gallery'),
+              onTap: () => _pickImage(ImageSource.gallery),
               child: Column(
                 children: [
                   Container(
@@ -1349,7 +1362,7 @@ class _Step2AICaptureState extends State<_Step2AICapture>
                   ),
                   child: Text(
                     widget.hasAtLeastOnePhoto
-                        ? 'Proceed to Review ($_capturedCount/3 captured)'
+                        ? 'Proceed to Review'
                         : 'Capture photos to proceed',
                     style: TextStyle(
                       color: widget.hasAtLeastOnePhoto
@@ -1693,7 +1706,7 @@ class _Step4CompleteState extends State<_Step4Complete>
             ),
             const SizedBox(height: 12),
             Text(
-              'Your claim has been submitted with 3 AI-verified images.\nWe will contact you shortly.',
+              'Your claim has been submitted with your uploaded damage photo.\nWe will contact you shortly.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
