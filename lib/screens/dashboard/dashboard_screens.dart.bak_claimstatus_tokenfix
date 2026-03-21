@@ -4,6 +4,7 @@ import '../claims/claim_history_screen.dart';
 import '../claims/claim_status_screen.dart';
 import '../profile/profile_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../claims/claim_detail_screen.dart';
 import '../../services/auth_service.dart';
 import '../../services/claim_service.dart';
 
@@ -27,8 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   int _unreadNotifications = 3;
   String _userName = 'Loading...';
-  List<Map<String, dynamic>> _claims = [];
-  int _selectedClaimIndex = 0;
+  Map<String, dynamic>? _latestClaim;
   bool _isLoadingClaim = true;
 
   @override
@@ -40,7 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadDashboardData() async {
     await Future.wait([
       _loadUserProfile(),
-      _loadClaims(),
+      _loadLatestClaim(),
     ]);
   }
 
@@ -75,12 +75,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _loadClaims() async {
+  Future<void> _loadLatestClaim() async {
     if (widget.accessToken == null || widget.accessToken!.isEmpty) {
       if (!mounted) return;
       setState(() {
-        _claims = [];
-        _selectedClaimIndex = 0;
+        _latestClaim = null;
         _isLoadingClaim = false;
       });
       return;
@@ -93,17 +92,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (!mounted) return;
       setState(() {
-        _claims = claims;
-        if (_selectedClaimIndex >= _claims.length) {
-          _selectedClaimIndex = _claims.isEmpty ? 0 : _claims.length - 1;
-        }
+        _latestClaim = claims.isNotEmpty ? claims.first : null;
         _isLoadingClaim = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _claims = [];
-        _selectedClaimIndex = 0;
+        _latestClaim = null;
         _isLoadingClaim = false;
       });
     }
@@ -113,22 +108,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _loadDashboardData();
     if (!mounted) return;
     setState(() {});
-  }
-
-  void _showPreviousClaim() {
-    if (_claims.isEmpty) return;
-    setState(() {
-      _selectedClaimIndex =
-          (_selectedClaimIndex - 1).clamp(0, _claims.length - 1);
-    });
-  }
-
-  void _showNextClaim() {
-    if (_claims.isEmpty) return;
-    setState(() {
-      _selectedClaimIndex =
-          (_selectedClaimIndex + 1).clamp(0, _claims.length - 1);
-    });
   }
 
   String get _greeting {
@@ -180,8 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedClaim =
-        _claims.isNotEmpty ? _claims[_selectedClaimIndex] : null;
+    final latestClaim = _latestClaim;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -216,16 +194,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     const SizedBox(height: 24),
                     _ActiveClaimBanner(
-                      claim: selectedClaim,
+                      claim: latestClaim,
                       isLoading: _isLoadingClaim,
-                      accessToken: widget.accessToken,
-                    ),
-                    const SizedBox(height: 10),
-                    _ClaimSelector(
-                      claims: _claims,
-                      selectedIndex: _selectedClaimIndex,
-                      onPrevious: _showPreviousClaim,
-                      onNext: _showNextClaim,
                     ),
                     const SizedBox(height: 20),
                     _SearchBar(),
@@ -237,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 26),
                     _QuickStats(
-                      claim: selectedClaim,
+                      claim: latestClaim,
                       isLoading: _isLoadingClaim,
                     ),
                     const SizedBox(height: 22),
@@ -248,7 +218,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
-          _BottomNavBar(onReportClaim: _goToReportClaim, accessToken: widget.accessToken),
+          _BottomNavBar(onReportClaim: _goToReportClaim),
         ],
       ),
     );
@@ -311,6 +281,7 @@ double _progressFromStatus(String status) {
     case 'approved':
     case 'settled':
     case 'closed':
+      return 1.0;
     case 'rejected':
       return 1.0;
     default:
@@ -494,12 +465,10 @@ class _DiagonalClipper extends CustomClipper<Path> {
 class _ActiveClaimBanner extends StatelessWidget {
   final Map<String, dynamic>? claim;
   final bool isLoading;
-  final String? accessToken;
 
   const _ActiveClaimBanner({
     required this.claim,
     required this.isLoading,
-    required this.accessToken,
   });
 
   @override
@@ -563,8 +532,7 @@ class _ActiveClaimBanner extends StatelessWidget {
       );
     }
 
-    final claimNumber =
-        '#${(claim!['claimNumber'] ?? claim!['id'] ?? 'Unknown').toString()}';
+    final claimNumber = '#${(claim!['claimNumber'] ?? claim!['id'] ?? 'Unknown').toString()}';
     final statusRaw = (claim!['status'] ?? 'pending').toString();
     final status = _displayStatus(statusRaw);
     final vehicle = (claim!['vehicle'] as Map?) ?? {};
@@ -664,9 +632,7 @@ class _ActiveClaimBanner extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ClaimStatusScreen(
-                    accessToken: accessToken,
-                  ),
+                  builder: (_) => ClaimStatusScreen(),
                 ),
               ),
               child: Row(
@@ -692,76 +658,6 @@ class _ActiveClaimBanner extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ClaimSelector extends StatelessWidget {
-  final List<Map<String, dynamic>> claims;
-  final int selectedIndex;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-
-  const _ClaimSelector({
-    required this.claims,
-    required this.selectedIndex,
-    required this.onPrevious,
-    required this.onNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (claims.isEmpty) return const SizedBox.shrink();
-
-    final selected = claims[selectedIndex];
-    final claimNumber =
-        '#${(selected['claimNumber'] ?? selected['id'] ?? 'Unknown').toString()}';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF4FB),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: selectedIndex > 0 ? onPrevious : null,
-            icon: const Icon(Icons.chevron_left),
-            color: const Color(0xFF1A56DB),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                const Text(
-                  'Showing claim',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'Poppins',
-                    color: Colors.black54,
-                  ),
-                ),
-                Text(
-                  claimNumber,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A56DB),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: selectedIndex < claims.length - 1 ? onNext : null,
-            icon: const Icon(Icons.chevron_right),
-            color: const Color(0xFF1A56DB),
           ),
         ],
       ),
@@ -1086,8 +982,7 @@ class _QuickStats extends StatelessWidget {
 
     final statusRaw = (claim?['status'] ?? 'pending').toString();
     final progress = claim == null ? 0.0 : _progressFromStatus(statusRaw);
-    final displayStatus =
-        claim == null ? 'No claims yet' : _displayStatus(statusRaw);
+    final displayStatus = claim == null ? 'No claims yet' : _displayStatus(statusRaw);
     final photos = claim?['photos'];
     final photoCount = photos is List ? photos.length : 0;
 
@@ -1123,9 +1018,11 @@ class _QuickStats extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Your selected claim update:',
-                style: TextStyle(
+              Text(
+                claim == null
+                    ? 'Your latest claim update:'
+                    : 'Your latest claim update:',
+                style: const TextStyle(
                   fontSize: 13,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w600,
@@ -1262,11 +1159,7 @@ class _TipCard extends StatelessWidget {
 // ----------------------------------------------------------
 class _BottomNavBar extends StatelessWidget {
   final VoidCallback onReportClaim;
-  final String? accessToken;
-  const _BottomNavBar({
-    required this.onReportClaim,
-    required this.accessToken,
-  });
+  const _BottomNavBar({required this.onReportClaim});
 
   @override
   Widget build(BuildContext context) {
@@ -1289,7 +1182,7 @@ class _BottomNavBar extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ProfileScreen(accessToken: accessToken)),
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
               );
             },
             child: const Icon(

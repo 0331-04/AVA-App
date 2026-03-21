@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/claim_service.dart';
 
-
-
-//  Claim Status data model 
+// Claim Status data model
 class ClaimStatusData {
   final String claimId;
   final String vehicle;
@@ -14,9 +13,9 @@ class ClaimStatusData {
   final int labourLKR;
   final int partsLKR;
   final int otherLKR;
-  final double aiConfidence;    
+  final double aiConfidence;
   final String currentStatus;
-  final int currentStepIndex;   
+  final int currentStepIndex;
   final List<String> assessorNotes;
   final int photosUploaded;
 
@@ -39,36 +38,147 @@ class ClaimStatusData {
   });
 }
 
-//  TODO: Replace with real data from your backend API 
-const _mockClaim = ClaimStatusData(
-  claimId: '#CLM-1042',
-  vehicle: 'Toyota Camry 2022',
-  licensePlate: 'ABC-1234',
-  damageType: 'Front Bumper Scratch',
-  submittedDate: 'Nov 20, 2024',
-  estimatedCompletion: 'Dec 5, 2024',
-  estimateLKR: 375000,
-  labourLKR: 95000,
-  partsLKR: 245000,
-  otherLKR: 35000,
-  aiConfidence: 0.91,
-  currentStatus: 'Payment Processing',
-  currentStepIndex: 3,
-  assessorNotes: [
-    'AI analysis detected moderate front bumper impact.',
-    'Physical inspection confirmed scratch depth: 2–3mm.',
-    'OEM bumper part recommended for replacement.',
-  ],
-  photosUploaded: 4,
-);
+ClaimStatusData _emptyClaim() => const ClaimStatusData(
+      claimId: 'No Claims',
+      vehicle: 'No vehicle data',
+      licensePlate: 'N/A',
+      damageType: 'No damage data',
+      submittedDate: 'N/A',
+      estimatedCompletion: 'Pending',
+      estimateLKR: 0,
+      labourLKR: 0,
+      partsLKR: 0,
+      otherLKR: 0,
+      aiConfidence: 0.0,
+      currentStatus: 'Submitted',
+      currentStepIndex: 0,
+      assessorNotes: ['No claim has been submitted yet.'],
+      photosUploaded: 0,
+    );
 
-class ClaimStatusScreen extends StatelessWidget {
-  // TODO: Accept real ClaimStatusData from navigation arguments
-  final ClaimStatusData claim;
+String _formatDate(dynamic value) {
+  if (value == null) return 'N/A';
+  final raw = value.toString();
+  final parsed = DateTime.tryParse(raw);
+  if (parsed == null) return raw;
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  return '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
+}
 
-  const ClaimStatusScreen({super.key, this.claim = _mockClaim});
+String _displayStatus(String status) {
+  switch (status.toLowerCase()) {
+    case 'pending':
+      return 'Submitted';
+    case 'documents_review':
+      return 'In Review';
+    case 'damage_assessment':
+      return 'Assessment';
+    case 'investigation':
+      return 'In Review';
+    case 'approved':
+      return 'Approved';
+    case 'rejected':
+      return 'Rejected';
+    case 'settled':
+    case 'closed':
+      return 'Payment Processing';
+    case 'disputed':
+      return 'In Review';
+    default:
+      return status;
+  }
+}
 
-  // Format LKR with comma separators
+int _stepFromStatus(String status) {
+  switch (status.toLowerCase()) {
+    case 'pending':
+      return 0;
+    case 'documents_review':
+    case 'investigation':
+      return 1;
+    case 'damage_assessment':
+      return 2;
+    case 'approved':
+    case 'rejected':
+    case 'settled':
+    case 'closed':
+      return 3;
+    default:
+      return 0;
+  }
+}
+
+ClaimStatusData _claimStatusFromApi(Map<String, dynamic> c) {
+  final vehicle = (c['vehicle'] as Map?) ?? {};
+  final make = (vehicle['make'] ?? '').toString();
+  final model = (vehicle['model'] ?? '').toString();
+  final year = (vehicle['year'] ?? '').toString();
+  final plate = (vehicle['licensePlate'] ?? 'N/A').toString();
+
+  final vehicleText =
+      [make, model, year].where((e) => e.trim().isNotEmpty).join(' ');
+  final estimatedAmount = c['estimatedAmount'];
+  final total = estimatedAmount is num
+      ? estimatedAmount.toInt()
+      : int.tryParse(estimatedAmount?.toString() ?? '') ?? 0;
+
+  final damageAnalysis = (c['damageAnalysis'] as Map?) ?? {};
+  final totalEstimatedCost = (damageAnalysis['totalEstimatedCost'] as Map?) ?? {};
+  final aiConfidenceRaw = damageAnalysis['confidence'];
+  final aiConfidence = aiConfidenceRaw is num
+      ? aiConfidenceRaw.toDouble()
+      : double.tryParse(aiConfidenceRaw?.toString() ?? '') ?? 0.0;
+
+  final minEstimate = totalEstimatedCost['min'];
+  final maxEstimate = totalEstimatedCost['max'];
+  final parts = maxEstimate is num
+      ? (maxEstimate.toDouble() * 0.65).toInt()
+      : (total * 0.65).toInt();
+  final labour = minEstimate is num
+      ? (minEstimate.toDouble() * 0.25).toInt()
+      : (total * 0.25).toInt();
+  final other = (total - labour - parts).clamp(0, total);
+
+  final photos = c['photos'];
+  final status = (c['status'] ?? 'pending').toString();
+  final incidentDescription =
+      (c['incidentDescription'] ?? 'No description').toString();
+
+  return ClaimStatusData(
+    claimId: '#${(c['claimNumber'] ?? c['id'] ?? 'Unknown').toString()}',
+    vehicle: vehicleText.isEmpty ? 'Unknown Vehicle' : vehicleText,
+    licensePlate: plate,
+    damageType: incidentDescription,
+    submittedDate: _formatDate(c['submittedAt']),
+    estimatedCompletion: 'Pending',
+    estimateLKR: total,
+    labourLKR: labour,
+    partsLKR: parts,
+    otherLKR: other,
+    aiConfidence: aiConfidence,
+    currentStatus: _displayStatus(status),
+    currentStepIndex: _stepFromStatus(status),
+    assessorNotes: [
+      'Status: ${_displayStatus(status)}',
+      if (incidentDescription.isNotEmpty) incidentDescription,
+    ],
+    photosUploaded: photos is List ? photos.length : 0,
+  );
+}
+
+class ClaimStatusScreen extends StatefulWidget {
+  final String? accessToken;
+  final ClaimStatusData? claim;
+
+  const ClaimStatusScreen({
+    super.key,
+    this.accessToken,
+    this.claim,
+  });
+
   static String formatLKR(int amount) {
     final str = amount.toString();
     final result = StringBuffer();
@@ -80,61 +190,136 @@ class ClaimStatusScreen extends StatelessWidget {
   }
 
   @override
+  State<ClaimStatusScreen> createState() => _ClaimStatusScreenState();
+}
+
+class _ClaimStatusScreenState extends State<ClaimStatusScreen> {
+  final ClaimService _claimService = ClaimService();
+  late ClaimStatusData _claim;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _claim = widget.claim ?? _emptyClaim();
+    if (widget.claim != null) {
+      _isLoading = false;
+    } else {
+      _loadClaim();
+    }
+  }
+
+  Future<void> _loadClaim() async {
+    if (widget.accessToken == null || widget.accessToken!.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _claim = _emptyClaim();
+        _isLoading = false;
+        _error = 'Missing access token';
+      });
+      return;
+    }
+
+    try {
+      final claims = await _claimService.getClaims(accessToken: widget.accessToken!);
+      if (!mounted) return;
+
+      if (claims.isEmpty) {
+        setState(() {
+          _claim = _emptyClaim();
+          _isLoading = false;
+          _error = null;
+        });
+        return;
+      }
+
+      setState(() {
+        _claim = _claimStatusFromApi(claims.first);
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _claim = _emptyClaim();
+        _isLoading = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final claim = _claim;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
-        children: [
-          _StatusHeader(claim: claim),
-          Expanded(
-            child: RefreshIndicator(
-              color: const Color(0xFF004AAD),
-              // TODO: replace with real API refresh
-              onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
-              child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Column(
-                children: [
-                  //  Vehicle info card 
-                  _VehicleCard(claim: claim),
-                  const SizedBox(height: 14),
-
-                  //  Timeline stepper 
-                  _TimelineStepper(currentStep: claim.currentStepIndex),
-                  const SizedBox(height: 14),
-
-                  //  AI confidence badge 
-                  _AIConfidenceCard(confidence: claim.aiConfidence),
-                  const SizedBox(height: 14),
-
-                  //  Cost breakdown 
-                  _CostBreakdownCard(claim: claim),
-                  const SizedBox(height: 14),
-
-                  //  Photo strip 
-                  _PhotoStripCard(photosUploaded: claim.photosUploaded),
-                  const SizedBox(height: 14),
-
-                  //  Assessor notes 
-                  _AssessorNotesCard(notes: claim.assessorNotes),
-                  const SizedBox(height: 14),
-
-                  //  Action buttons 
-                  _ActionButtons(claim: claim),
-                ],
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF004AAD),
               ),
+            )
+          : Column(
+              children: [
+                _StatusHeader(claim: claim),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: const Color(0xFF004AAD),
+                    onRefresh: _loadClaim,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      child: Column(
+                        children: [
+                          _VehicleCard(claim: claim),
+                          const SizedBox(height: 14),
+                          _TimelineStepper(currentStep: claim.currentStepIndex),
+                          const SizedBox(height: 14),
+                          _AIConfidenceCard(confidence: claim.aiConfidence),
+                          const SizedBox(height: 14),
+                          _CostBreakdownCard(claim: claim),
+                          const SizedBox(height: 14),
+                          _PhotoStripCard(photosUploaded: claim.photosUploaded),
+                          const SizedBox(height: 14),
+                          _AssessorNotesCard(notes: claim.assessorNotes),
+                          const SizedBox(height: 14),
+                          if (_error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                                ),
+                                child: Text(
+                                  _error!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Poppins',
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          _ActionButtons(claim: claim),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
 
 // ----------------------------------------------------------
-//  HEADER
+// HEADER
 // ----------------------------------------------------------
 class _StatusHeader extends StatelessWidget {
   final ClaimStatusData claim;
@@ -142,10 +327,14 @@ class _StatusHeader extends StatelessWidget {
 
   Color get _statusColor {
     switch (claim.currentStatus) {
-      case 'Approved':           return Colors.green.shade600;
-      case 'Rejected':           return Colors.red.shade600;
-      case 'Payment Processing': return Colors.blue.shade700;
-      default:                   return Colors.orange.shade700;
+      case 'Approved':
+        return Colors.green.shade600;
+      case 'Rejected':
+        return Colors.red.shade600;
+      case 'Payment Processing':
+        return Colors.blue.shade700;
+      default:
+        return Colors.orange.shade700;
     }
   }
 
@@ -164,7 +353,6 @@ class _StatusHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back button + app name
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -190,15 +378,13 @@ class _StatusHeader extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    // Status badge in header
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: _statusColor.withOpacity(0.25),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.5)),
+                        border: Border.all(color: Colors.white.withOpacity(0.5)),
                       ),
                       child: Text(
                         claim.currentStatus,
@@ -222,9 +408,10 @@ class _StatusHeader extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     shadows: [
                       Shadow(
-                          offset: Offset(0, 4),
-                          blurRadius: 4,
-                          color: Color(0x40000000)),
+                        offset: Offset(0, 4),
+                        blurRadius: 4,
+                        color: Color(0x40000000),
+                      ),
                     ],
                   ),
                 ),
@@ -260,9 +447,6 @@ class _HeaderClipper extends CustomClipper<Path> {
   bool shouldReclip(_HeaderClipper old) => false;
 }
 
-// ----------------------------------------------------------
-//  VEHICLE INFO CARD
-// ----------------------------------------------------------
 class _VehicleCard extends StatelessWidget {
   final ClaimStatusData claim;
   const _VehicleCard({required this.claim});
@@ -313,18 +497,15 @@ class _VehicleCard extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------
-//  TIMELINE STEPPER
-// ----------------------------------------------------------
 class _TimelineStepper extends StatelessWidget {
   final int currentStep;
   const _TimelineStepper({required this.currentStep});
 
   static const _steps = [
-    {'label': 'Submitted',    'icon': Icons.upload_file_outlined},
-    {'label': 'In Review',    'icon': Icons.manage_search_outlined},
-    {'label': 'Assessment',   'icon': Icons.analytics_outlined},
-    {'label': 'Decision',     'icon': Icons.gavel_outlined},
+    {'label': 'Submitted', 'icon': Icons.upload_file_outlined},
+    {'label': 'In Review', 'icon': Icons.manage_search_outlined},
+    {'label': 'Assessment', 'icon': Icons.analytics_outlined},
+    {'label': 'Decision', 'icon': Icons.gavel_outlined},
   ];
 
   static const _descriptions = [
@@ -351,17 +532,16 @@ class _TimelineStepper extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ...List.generate(_steps.length, (i) {
-            final done    = i < currentStep;
-            final active  = i == currentStep;
-            final isLast  = i == _steps.length - 1;
-            final label   = _steps[i]['label'] as String;
-            final icon    = _steps[i]['icon'] as IconData;
-            final desc    = _descriptions[i];
+            final done = i < currentStep;
+            final active = i == currentStep;
+            final isLast = i == _steps.length - 1;
+            final label = _steps[i]['label'] as String;
+            final icon = _steps[i]['icon'] as IconData;
+            final desc = _descriptions[i];
 
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left column icon + connector line
                 Column(
                   children: [
                     Container(
@@ -385,9 +565,7 @@ class _TimelineStepper extends StatelessWidget {
                       ),
                       child: Icon(
                         done ? Icons.check : icon,
-                        color: done || active
-                            ? Colors.white
-                            : Colors.grey.shade400,
+                        color: done || active ? Colors.white : Colors.grey.shade400,
                         size: 18,
                       ),
                     ),
@@ -395,15 +573,11 @@ class _TimelineStepper extends StatelessWidget {
                       Container(
                         width: 2,
                         height: 36,
-                        color: done
-                            ? Colors.green.shade300
-                            : Colors.grey.shade200,
+                        color: done ? Colors.green.shade300 : Colors.grey.shade200,
                       ),
                   ],
                 ),
                 const SizedBox(width: 14),
-
-                // Right column label + description
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 6, bottom: 16),
@@ -428,9 +602,7 @@ class _TimelineStepper extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Poppins',
-                            color: active
-                                ? Colors.black54
-                                : Colors.grey.shade400,
+                            color: active ? Colors.black54 : Colors.grey.shade400,
                           ),
                         ),
                       ],
@@ -446,9 +618,6 @@ class _TimelineStepper extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------
-//  AI CONFIDENCE CARD
-// ----------------------------------------------------------
 class _AIConfidenceCard extends StatelessWidget {
   final double confidence;
   const _AIConfidenceCard({required this.confidence});
@@ -476,11 +645,9 @@ class _AIConfidenceCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: _confidenceColor.withOpacity(0.1),
               shape: BoxShape.circle,
-              border: Border.all(
-                  color: _confidenceColor.withOpacity(0.4)),
+              border: Border.all(color: _confidenceColor.withOpacity(0.4)),
             ),
-            child: Icon(Icons.auto_awesome,
-                color: _confidenceColor, size: 24),
+            child: Icon(Icons.auto_awesome, color: _confidenceColor, size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -506,8 +673,7 @@ class _AIConfidenceCard extends StatelessWidget {
                           value: confidence,
                           minHeight: 7,
                           backgroundColor: Colors.grey.shade200,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              _confidenceColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(_confidenceColor),
                         ),
                       ),
                     ),
@@ -528,8 +694,7 @@ class _AIConfidenceCard extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: _confidenceColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
@@ -550,9 +715,6 @@ class _AIConfidenceCard extends StatelessWidget {
   }
 }
 
-//----------------------------------------------------------
-//  COST BREAKDOWN CARD
-// ----------------------------------------------------------
 class _CostBreakdownCard extends StatelessWidget {
   final ClaimStatusData claim;
   const _CostBreakdownCard({required this.claim});
@@ -580,27 +742,14 @@ class _CostBreakdownCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-
-          // Breakdown rows
-          _CostRow(
-              label: 'Labour',
-              amount: claim.labourLKR,
-              color: Colors.blue.shade400),
+          _CostRow(label: 'Labour', amount: claim.labourLKR, color: Colors.blue.shade400),
           const SizedBox(height: 8),
-          _CostRow(
-              label: 'Parts',
-              amount: claim.partsLKR,
-              color: Colors.purple.shade400),
+          _CostRow(label: 'Parts', amount: claim.partsLKR, color: Colors.purple.shade400),
           const SizedBox(height: 8),
-          _CostRow(
-              label: 'Other',
-              amount: claim.otherLKR,
-              color: Colors.orange.shade400),
+          _CostRow(label: 'Other', amount: claim.otherLKR, color: Colors.orange.shade400),
           const SizedBox(height: 12),
           const Divider(),
           const SizedBox(height: 8),
-
-          // Total
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -634,13 +783,11 @@ class _CostBreakdownCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline,
-                    size: 14, color: Colors.amber.shade700),
+                Icon(Icons.info_outline, size: 14, color: Colors.amber.shade700),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'This is a preliminary AI-generated estimate. '
-                    'Final amount may vary after physical assessment.',
+                    'This is a preliminary AI-generated estimate. Final amount may vary after physical assessment.',
                     style: TextStyle(
                       fontSize: 10,
                       fontFamily: 'Poppins',
@@ -662,8 +809,11 @@ class _CostRow extends StatelessWidget {
   final String label;
   final int amount;
   final Color color;
-  const _CostRow(
-      {required this.label, required this.amount, required this.color});
+  const _CostRow({
+    required this.label,
+    required this.amount,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -699,17 +849,12 @@ class _CostRow extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------
-//  PHOTO STRIP CARD
-// ----------------------------------------------------------
 class _PhotoStripCard extends StatelessWidget {
   final int photosUploaded;
   const _PhotoStripCard({required this.photosUploaded});
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Replace placeholder tiles with the real image thumbnails
-    
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -754,9 +899,11 @@ class _PhotoStripCard extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.photo_camera_outlined,
-                        color: const Color(0xFF2C2389).withOpacity(0.6),
-                        size: 24),
+                    Icon(
+                      Icons.photo_camera_outlined,
+                      color: const Color(0xFF2C2389).withOpacity(0.6),
+                      size: 24,
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       'Photo ${i + 1}',
@@ -777,9 +924,6 @@ class _PhotoStripCard extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------
-//  ASSESSOR NOTES CARD
-// ----------------------------------------------------------
 class _AssessorNotesCard extends StatelessWidget {
   final List<String> notes;
   const _AssessorNotesCard({required this.notes});
@@ -791,11 +935,11 @@ class _AssessorNotesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              const Icon(Icons.rate_review_outlined,
+            children: const [
+              Icon(Icons.rate_review_outlined,
                   color: Color(0xFF004AAD), size: 18),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Assessor Notes',
                 style: TextStyle(
                   fontSize: 14,
@@ -815,8 +959,7 @@ class _AssessorNotesCard extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 5),
-                    child: Icon(Icons.circle,
-                        size: 6, color: Color(0xFF004AAD)),
+                    child: Icon(Icons.circle, size: 6, color: Color(0xFF004AAD)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -840,9 +983,6 @@ class _AssessorNotesCard extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------
-//  ACTION BUTTONS
-// ----------------------------------------------------------
 class _ActionButtons extends StatelessWidget {
   final ClaimStatusData claim;
   const _ActionButtons({required this.claim});
@@ -851,15 +991,13 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Estimated completion row
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: const Color(0xFF004AAD).withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: const Color(0xFF004AAD).withOpacity(0.2)),
+            border: Border.all(color: const Color(0xFF004AAD).withOpacity(0.2)),
           ),
           child: Row(
             children: [
@@ -887,14 +1025,10 @@ class _ActionButtons extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-
-        // Download report button
         SizedBox(
           width: double.infinity,
           height: 46,
           child: OutlinedButton.icon(
-            // TODO: Implement the PDF report download
-          
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -904,8 +1038,7 @@ class _ActionButtons extends StatelessWidget {
               );
             },
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(
-                  color: Color(0xFF004AAD), width: 1.5),
+              side: const BorderSide(color: Color(0xFF004AAD), width: 1.5),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
@@ -923,14 +1056,10 @@ class _ActionButtons extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-
-        // Contact assessor button
         SizedBox(
           width: double.infinity,
           height: 46,
           child: ElevatedButton.icon(
-            // TODO: Open chat/email to assessor
-
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -962,9 +1091,6 @@ class _ActionButtons extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------
-//  REUSABLE CARD WRAPPER
-// ----------------------------------------------------------
 class _Card extends StatelessWidget {
   final Widget child;
   const _Card({required this.child});

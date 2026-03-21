@@ -4,8 +4,9 @@ import '../claims/claim_history_screen.dart';
 import '../claims/claim_status_screen.dart';
 import '../profile/profile_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../claims/claim_detail_screen.dart';
 import '../../services/auth_service.dart';
-import '../../services/claim_service.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   final String? accessToken;
@@ -23,25 +24,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const Color primaryBlue = Color(0xFF1A56DB);
 
   final AuthService _authService = AuthService();
-  final ClaimService _claimService = ClaimService();
-
   int _unreadNotifications = 3;
   String _userName = 'Loading...';
-  List<Map<String, dynamic>> _claims = [];
-  int _selectedClaimIndex = 0;
-  bool _isLoadingClaim = true;
 
   @override
   void initState() {
     super.initState();
-    _loadDashboardData();
-  }
-
-  Future<void> _loadDashboardData() async {
-    await Future.wait([
-      _loadUserProfile(),
-      _loadClaims(),
-    ]);
+    _loadUserProfile();
   }
 
   Future<void> _loadUserProfile() async {
@@ -67,7 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _userName = fullName.isEmpty ? 'User' : fullName;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _userName = 'User';
@@ -75,60 +64,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _loadClaims() async {
-    if (widget.accessToken == null || widget.accessToken!.isEmpty) {
-      if (!mounted) return;
-      setState(() {
-        _claims = [];
-        _selectedClaimIndex = 0;
-        _isLoadingClaim = false;
-      });
-      return;
-    }
-
-    try {
-      final claims = await _claimService.getClaims(
-        accessToken: widget.accessToken!,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _claims = claims;
-        if (_selectedClaimIndex >= _claims.length) {
-          _selectedClaimIndex = _claims.isEmpty ? 0 : _claims.length - 1;
-        }
-        _isLoadingClaim = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _claims = [];
-        _selectedClaimIndex = 0;
-        _isLoadingClaim = false;
-      });
-    }
-  }
-
   Future<void> _onRefresh() async {
-    await _loadDashboardData();
+    await _loadUserProfile();
     if (!mounted) return;
     setState(() {});
-  }
-
-  void _showPreviousClaim() {
-    if (_claims.isEmpty) return;
-    setState(() {
-      _selectedClaimIndex =
-          (_selectedClaimIndex - 1).clamp(0, _claims.length - 1);
-    });
-  }
-
-  void _showNextClaim() {
-    if (_claims.isEmpty) return;
-    setState(() {
-      _selectedClaimIndex =
-          (_selectedClaimIndex + 1).clamp(0, _claims.length - 1);
-    });
   }
 
   String get _greeting {
@@ -145,6 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Icons.nights_stay_outlined;
   }
 
+  //  Central navigation helper 
   void _goToReportClaim() {
     Navigator.push(
       context,
@@ -180,9 +120,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedClaim =
-        _claims.isNotEmpty ? _claims[_selectedClaimIndex] : null;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -195,11 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onNotificationTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => NotificationsScreen(
-                    accessToken: widget.accessToken,
-                  ),
-                ),
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
               );
               setState(() => _unreadNotifications = 0);
             },
@@ -215,18 +148,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 24),
-                    _ActiveClaimBanner(
-                      claim: selectedClaim,
-                      isLoading: _isLoadingClaim,
-                      accessToken: widget.accessToken,
-                    ),
-                    const SizedBox(height: 10),
-                    _ClaimSelector(
-                      claims: _claims,
-                      selectedIndex: _selectedClaimIndex,
-                      onPrevious: _showPreviousClaim,
-                      onNext: _showNextClaim,
-                    ),
+                    const _ActiveClaimBanner(),
                     const SizedBox(height: 20),
                     _SearchBar(),
                     const SizedBox(height: 22),
@@ -236,10 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onClaimStatus: _goToClaimStatus,
                     ),
                     const SizedBox(height: 26),
-                    _QuickStats(
-                      claim: selectedClaim,
-                      isLoading: _isLoadingClaim,
-                    ),
+                    _QuickStats(),
                     const SizedBox(height: 22),
                     _TipsTiles(),
                     const SizedBox(height: 20),
@@ -248,90 +167,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
-          _BottomNavBar(onReportClaim: _goToReportClaim, accessToken: widget.accessToken),
+          _BottomNavBar(onReportClaim: _goToReportClaim),
         ],
       ),
     );
   }
 }
 
-String _displayStatus(String status) {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 'Submitted';
-    case 'documents_review':
-      return 'In Review';
-    case 'damage_assessment':
-      return 'Assessment';
-    case 'investigation':
-      return 'In Review';
-    case 'approved':
-      return 'Approved';
-    case 'rejected':
-      return 'Rejected';
-    case 'settled':
-    case 'closed':
-      return 'Payment Processing';
-    case 'disputed':
-      return 'In Review';
-    default:
-      return status;
-  }
-}
-
-int _stepFromStatus(String status) {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 0;
-    case 'documents_review':
-    case 'investigation':
-      return 1;
-    case 'damage_assessment':
-      return 2;
-    case 'approved':
-    case 'rejected':
-    case 'settled':
-    case 'closed':
-      return 3;
-    default:
-      return 0;
-  }
-}
-
-double _progressFromStatus(String status) {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 0.25;
-    case 'documents_review':
-      return 0.50;
-    case 'damage_assessment':
-      return 0.75;
-    case 'investigation':
-      return 0.85;
-    case 'approved':
-    case 'settled':
-    case 'closed':
-    case 'rejected':
-      return 1.0;
-    default:
-      return 0.20;
-  }
-}
-
-String _formatDate(dynamic value) {
-  if (value == null) return 'Unknown';
-  final raw = value.toString();
-  final parsed = DateTime.tryParse(raw);
-  if (parsed == null) return raw;
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
-}
-
 // ----------------------------------------------------------
-// HEADER
+//  HEADER
 // ----------------------------------------------------------
 class _Header extends StatelessWidget {
   final String greeting;
@@ -455,6 +299,7 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    // TODO: Replace with real user profile image
                     const CircleAvatar(
                       radius: 26,
                       backgroundImage: NetworkImage(
@@ -489,113 +334,34 @@ class _DiagonalClipper extends CustomClipper<Path> {
 }
 
 // ----------------------------------------------------------
-// ACTIVE CLAIM BANNER
+//  ACTIVE CLAIM BANNER
 // ----------------------------------------------------------
 class _ActiveClaimBanner extends StatelessWidget {
-  final Map<String, dynamic>? claim;
-  final bool isLoading;
-  final String? accessToken;
+  const _ActiveClaimBanner();
 
-  const _ActiveClaimBanner({
-    required this.claim,
-    required this.isLoading,
-    required this.accessToken,
-  });
+  // TODO: Replace with real claim data from backend API
+  static const String claimId     = '#CLM-1042';
+  static const String claimStatus = 'In Review';
+  static const String claimDate   = 'Filed: 18 Feb 2026';
+  static const String claimCar    = 'Toyota Camry — Rear bumper damage';
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
-        ),
-      );
-    }
-
-    if (claim == null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'No active claims yet',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Submit a claim and it will appear here.',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontFamily: 'Inter',
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final claimNumber =
-        '#${(claim!['claimNumber'] ?? claim!['id'] ?? 'Unknown').toString()}';
-    final statusRaw = (claim!['status'] ?? 'pending').toString();
-    final status = _displayStatus(statusRaw);
-    final vehicle = (claim!['vehicle'] as Map?) ?? {};
-    final make = (vehicle['make'] ?? '').toString();
-    final model = (vehicle['model'] ?? '').toString();
-    final incidentDescription =
-        (claim!['incidentDescription'] ?? 'No description').toString();
-    final submittedDate = 'Filed: ${_formatDate(claim!['submittedAt'])}';
-    final currentStep = _stepFromStatus(statusRaw);
-
-    final vehicleTitle =
-        [make, model].where((e) => e.trim().isNotEmpty).join(' ');
-    final summary = vehicleTitle.isEmpty
-        ? incidentDescription
-        : '$vehicleTitle — $incidentDescription';
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A56DB).withOpacity(0.28),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: const Color(0xFF1A56DB).withOpacity(0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -603,165 +369,75 @@ class _ActiveClaimBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(
-                Icons.assignment_outlined,
-                color: Colors.white70,
-                size: 17,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Active Claim $claimNumber',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
+              Row(
+                children: [
+                  const Icon(Icons.assignment_outlined,
+                      color: Colors.white70, size: 16),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Active Claim $claimId',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: _StatusChip(status: status),
-                ),
-              ),
+              _StatusChip(status: claimStatus),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
-            summary,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            claimCar,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.92),
-              fontSize: 13,
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 12,
               fontFamily: 'Inter',
-              fontWeight: FontWeight.w500,
-              height: 1.35,
+              fontWeight: FontWeight.w400,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           Text(
-            submittedDate,
+            claimDate,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
+              color: Colors.white.withOpacity(0.65),
               fontSize: 11,
               fontFamily: 'Inter',
             ),
           ),
-          const SizedBox(height: 16),
-          _ClaimStepProgress(currentStep: currentStep),
           const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ClaimStatusScreen(
-                    accessToken: accessToken,
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'View full details',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
-                      fontSize: 12,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white70,
-                    size: 11,
-                  ),
-                ],
-              ),
+          // TODO: Pass currentStep from real claim data
+          const _ClaimStepProgress(currentStep: 1),
+          const SizedBox(height: 12),
+          // TODO: onTap → Navigator.push to ClaimDetailScreen
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ClaimDetailScreen()),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ClaimSelector extends StatelessWidget {
-  final List<Map<String, dynamic>> claims;
-  final int selectedIndex;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-
-  const _ClaimSelector({
-    required this.claims,
-    required this.selectedIndex,
-    required this.onPrevious,
-    required this.onNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (claims.isEmpty) return const SizedBox.shrink();
-
-    final selected = claims[selectedIndex];
-    final claimNumber =
-        '#${(selected['claimNumber'] ?? selected['id'] ?? 'Unknown').toString()}';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF4FB),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: selectedIndex > 0 ? onPrevious : null,
-            icon: const Icon(Icons.chevron_left),
-            color: const Color(0xFF1A56DB),
-          ),
-          Expanded(
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Text(
-                  'Showing claim',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'Poppins',
-                    color: Colors.black54,
-                  ),
-                ),
                 Text(
-                  claimNumber,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A56DB),
+                  'View full details',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 12,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Colors.white70,
                   ),
                 ),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Colors.white70, size: 11),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: selectedIndex < claims.length - 1 ? onNext : null,
-            icon: const Icon(Icons.chevron_right),
-            color: const Color(0xFF1A56DB),
           ),
         ],
       ),
@@ -775,55 +451,29 @@ class _StatusChip extends StatelessWidget {
 
   Color get _chipColor {
     switch (status) {
-      case 'Approved':
-        return Colors.green.shade600;
-      case 'Rejected':
-        return Colors.red.shade600;
-      case 'In Review':
-        return Colors.orange.shade700;
-      case 'Assessment':
-        return Colors.amber.shade700;
-      case 'Payment Processing':
-        return Colors.blue.shade700;
-      case 'Submitted':
-        return Colors.white;
-      default:
-        return Colors.grey.shade600;
+      case 'Approved':  return Colors.green.shade600;
+      case 'Rejected':  return Colors.red.shade600;
+      case 'In Review': return Colors.orange.shade700;
+      default:          return Colors.grey.shade600;
     }
-  }
-
-  Color get _textColor {
-    if (status == 'Submitted') return const Color(0xFF1A56DB);
-    return Colors.white;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 120),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: status == 'Submitted'
-            ? Colors.white.withOpacity(0.92)
-            : _chipColor.withOpacity(0.22),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: status == 'Submitted'
-              ? Colors.white
-              : _chipColor.withOpacity(0.65),
-          width: 1,
-        ),
+        color: _chipColor.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _chipColor.withOpacity(0.7), width: 1),
       ),
       child: Text(
         status,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: _textColor,
-          fontSize: 10,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
           fontFamily: 'Inter',
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -835,10 +485,7 @@ class _ClaimStepProgress extends StatelessWidget {
   const _ClaimStepProgress({required this.currentStep});
 
   static const List<String> _steps = [
-    'Submitted',
-    'In Review',
-    'Assessment',
-    'Decision',
+    'Submitted', 'In Review', 'Assessment', 'Decision',
   ];
 
   @override
@@ -854,29 +501,25 @@ class _ClaimStepProgress extends StatelessWidget {
                 child: Column(
                   children: [
                     Container(
-                      width: 11,
-                      height: 11,
+                      width: 10,
+                      height: 10,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: done
                             ? Colors.white
-                            : Colors.white.withOpacity(0.28),
+                            : Colors.white.withOpacity(0.3),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.65),
-                          width: 1,
-                        ),
+                            color: Colors.white.withOpacity(0.6), width: 1),
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Text(
                       _steps[i],
                       textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: done
                             ? Colors.white
-                            : Colors.white.withOpacity(0.5),
+                            : Colors.white.withOpacity(0.45),
                         fontSize: 8,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,
@@ -889,10 +532,10 @@ class _ClaimStepProgress extends StatelessWidget {
                 Expanded(
                   child: Container(
                     height: 2,
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: const EdgeInsets.only(bottom: 14),
                     color: (done && i < currentStep)
                         ? Colors.white
-                        : Colors.white.withOpacity(0.28),
+                        : Colors.white.withOpacity(0.3),
                   ),
                 ),
             ],
@@ -904,7 +547,7 @@ class _ClaimStepProgress extends StatelessWidget {
 }
 
 // ----------------------------------------------------------
-// SEARCH BAR
+//  SEARCH BAR
 // ----------------------------------------------------------
 class _SearchBar extends StatelessWidget {
   @override
@@ -946,7 +589,7 @@ class _SearchBar extends StatelessWidget {
 }
 
 // ----------------------------------------------------------
-// QUICK ACTION CARDS
+//  QUICK ACTION CARDS
 // ----------------------------------------------------------
 class _QuickActions extends StatelessWidget {
   final VoidCallback onReportAccident;
@@ -1004,14 +647,12 @@ class _ActionCard extends StatelessWidget {
         decoration: ShapeDecoration(
           color: const Color(0xFFE7EDF5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+              borderRadius: BorderRadius.circular(10)),
           shadows: const [
             BoxShadow(
-              color: Color(0x26000000),
-              blurRadius: 4,
-              offset: Offset(0, 4),
-            ),
+                color: Color(0x26000000),
+                blurRadius: 4,
+                offset: Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -1038,59 +679,14 @@ class _ActionCard extends StatelessWidget {
 }
 
 // ----------------------------------------------------------
-// QUICK STATS CARD
+//  QUICK STATS CARD
 // ----------------------------------------------------------
 class _QuickStats extends StatelessWidget {
-  final Map<String, dynamic>? claim;
-  final bool isLoading;
-
-  const _QuickStats({
-    required this.claim,
-    required this.isLoading,
-  });
+  // TODO: Replace with thr real % from damage assessment API
+  static const double completionPercent = 0.78;
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Quick Stats',
-            style: TextStyle(
-              color: Colors.black87,
-              fontSize: 17,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: ShapeDecoration(
-              color: const Color(0xFFE7EDF5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF1A56DB),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    final statusRaw = (claim?['status'] ?? 'pending').toString();
-    final progress = claim == null ? 0.0 : _progressFromStatus(statusRaw);
-    final displayStatus =
-        claim == null ? 'No claims yet' : _displayStatus(statusRaw);
-    final photos = claim?['photos'];
-    final photoCount = photos is List ? photos.length : 0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1110,21 +706,19 @@ class _QuickStats extends StatelessWidget {
           decoration: ShapeDecoration(
             color: const Color(0xFFE7EDF5),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+                borderRadius: BorderRadius.circular(12)),
             shadows: const [
               BoxShadow(
-                color: Color(0x18000000),
-                blurRadius: 6,
-                offset: Offset(0, 3),
-              ),
+                  color: Color(0x18000000),
+                  blurRadius: 6,
+                  offset: Offset(0, 3)),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Your selected claim update:',
+                'Your last damage assessment:',
                 style: TextStyle(
                   fontSize: 13,
                   fontFamily: 'Inter',
@@ -1134,9 +728,7 @@ class _QuickStats extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                claim == null
-                    ? 'No claims submitted'
-                    : '${(progress * 100).toInt()}% completed',
+                '${(completionPercent * 100).toInt()}% completed',
                 style: const TextStyle(
                   fontSize: 20,
                   fontFamily: 'Poppins',
@@ -1148,24 +740,25 @@ class _QuickStats extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
-                  value: progress,
+                  value: completionPercent,
                   minHeight: 8,
                   backgroundColor: Colors.white,
                   valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF1A56DB),
-                  ),
+                      Color(0xFF1A56DB)),
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
-                claim == null
-                    ? 'Submit a claim to see progress here.'
-                    : 'Current status: $displayStatus • $photoCount photo(s) uploaded',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A56DB),
+              GestureDetector(
+                onTap: () {}, // TODO: Navigate to claim upload screen
+                child: const Text(
+                  'Upload missing pictures →',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1A56DB),
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ],
@@ -1177,7 +770,7 @@ class _QuickStats extends StatelessWidget {
 }
 
 // ----------------------------------------------------------
-// TIPS / NEWS TILES
+//  TIPS / NEWS TILES
 // ----------------------------------------------------------
 class _TipsTiles extends StatelessWidget {
   @override
@@ -1188,7 +781,7 @@ class _TipsTiles extends StatelessWidget {
           child: _TipCard(
             icon: Icons.camera_alt_outlined,
             text: 'How to take the perfect damage photo',
-            onTap: () {},
+            onTap: () {}, // TODO: open tips article
           ),
         ),
         const SizedBox(width: 12),
@@ -1196,7 +789,7 @@ class _TipsTiles extends StatelessWidget {
           child: _TipCard(
             icon: Icons.tips_and_updates_outlined,
             text: 'New AI: engine update for scratch detection',
-            onTap: () {},
+            onTap: () {}, // TODO: open news article
           ),
         ),
       ],
@@ -1223,14 +816,12 @@ class _TipCard extends StatelessWidget {
         decoration: ShapeDecoration(
           color: const Color(0xFFE7EDF5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+              borderRadius: BorderRadius.circular(10)),
           shadows: const [
             BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
+                color: Color(0x14000000),
+                blurRadius: 4,
+                offset: Offset(0, 2)),
           ],
         ),
         child: Row(
@@ -1258,15 +849,11 @@ class _TipCard extends StatelessWidget {
 }
 
 // ----------------------------------------------------------
-// BOTTOM NAV BAR
+//  BOTTOM NAV BAR
 // ----------------------------------------------------------
 class _BottomNavBar extends StatelessWidget {
   final VoidCallback onReportClaim;
-  final String? accessToken;
-  const _BottomNavBar({
-    required this.onReportClaim,
-    required this.accessToken,
-  });
+  const _BottomNavBar({required this.onReportClaim});
 
   @override
   Widget build(BuildContext context) {
@@ -1277,26 +864,20 @@ class _BottomNavBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           GestureDetector(
-            onTap: () {},
-            child: const Icon(
-              Icons.home_outlined,
-              size: 30,
-              color: Color(0xFF1A56DB),
-            ),
+            onTap: () {}, // Already on Dashboard — no action needed
+            child: const Icon(Icons.home_outlined,
+                size: 30, color: Color(0xFF1A56DB)), // Active = blue
           ),
           _NavItemCenter(onTap: onReportClaim),
           GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ProfileScreen(accessToken: accessToken)),
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
               );
             },
-            child: const Icon(
-              Icons.person_outline_rounded,
-              size: 30,
-              color: Color(0xFF393939),
-            ),
+            child: const Icon(Icons.person_outline_rounded,
+                size: 30, color: Color(0xFF393939)),
           ),
         ],
       ),
@@ -1322,11 +903,8 @@ class _NavItemCenter extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF393939), width: 2),
             ),
-            child: const Icon(
-              Icons.warning_amber_rounded,
-              size: 28,
-              color: Color(0xFF393939),
-            ),
+            child: const Icon(Icons.warning_amber_rounded,
+                size: 28, color: Color(0xFF393939)),
           ),
           Positioned(
             top: -2,
@@ -1335,9 +913,7 @@ class _NavItemCenter extends StatelessWidget {
               width: 14,
               height: 14,
               decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
+                  color: Colors.red, shape: BoxShape.circle),
             ),
           ),
         ],
