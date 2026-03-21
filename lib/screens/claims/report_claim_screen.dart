@@ -37,6 +37,8 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
   String _incidentType = 'collision';
   DateTime _incidentDate = DateTime.now();
   String? _submittedClaimNumber;
+  bool _isAnalyzing = false;
+  Map<String, dynamic>? _analysisResult;
 
   // Step 2 state
   // TODO: Replace String with File when using real camera/gallery
@@ -138,9 +140,49 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
           key: const ValueKey(1),
           capturedPhotos: _capturedPhotos,
           hasAtLeastOnePhoto: _hasAtLeastOnePhoto,
-          onPhotoCaptured: (type, path) =>
-              setState(() => _capturedPhotos[type] = path),
-          onProceed: _hasAtLeastOnePhoto ? _nextStep : null,
+          isAnalyzing: _isAnalyzing,
+          analysisResult: _analysisResult,
+          onPhotoCaptured: (type, path) => setState(() {
+            _capturedPhotos[type] = path;
+            _analysisResult = null;
+          }),
+          onAnalyze: () async {
+            final photoPath = _capturedPhotos['Damage Photo'];
+            if (photoPath == null || photoPath.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please capture or select an image first')),
+              );
+              return;
+            }
+            if (widget.accessToken == null || widget.accessToken!.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Missing access token')),
+              );
+              return;
+            }
+
+            setState(() => _isAnalyzing = true);
+            try {
+              final result = await _claimService.analyzeImage(
+                accessToken: widget.accessToken!,
+                imagePath: photoPath,
+              );
+              if (!mounted) return;
+              setState(() {
+                _analysisResult = Map<String, dynamic>.from(result['data'] ?? {});
+              });
+            } catch (e) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+              );
+            } finally {
+              if (mounted) {
+                setState(() => _isAnalyzing = false);
+              }
+            }
+          },
+          onProceed: (_hasAtLeastOnePhoto && _analysisResult != null) ? _nextStep : null,
         );
       case 2:
         return _Step3ReviewSubmit(
@@ -180,6 +222,7 @@ class _ReportClaimScreenState extends State<ReportClaimScreen> {
                       'city': 'Sri Lanka',
                     },
                     photoPath: _capturedPhotos['Damage Photo'],
+                    damageAnalysis: _analysisResult,
                   );
 
                   final data = result['data'] ?? {};
@@ -965,14 +1008,20 @@ class _Step1SelectArea extends StatelessWidget {
 class _Step2AICapture extends StatefulWidget {
   final Map<String, String?> capturedPhotos;
   final bool hasAtLeastOnePhoto;
+  final bool isAnalyzing;
+  final Map<String, dynamic>? analysisResult;
   final void Function(String type, String path) onPhotoCaptured;
+  final Future<void> Function() onAnalyze;
   final VoidCallback? onProceed;
 
   const _Step2AICapture({
     super.key,
     required this.capturedPhotos,
     required this.hasAtLeastOnePhoto,
+    required this.isAnalyzing,
+    required this.analysisResult,
     required this.onPhotoCaptured,
+    required this.onAnalyze,
     required this.onProceed,
   });
 
@@ -1324,7 +1373,130 @@ class _Step2AICaptureState extends State<_Step2AICapture>
         ),
         const SizedBox(height: 10),
 
-        //  Validation message + Proceed button 
+        if (widget.analysisResult != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF004AAD).withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF004AAD).withOpacity(0.2),
+                ),
+              ),
+              child: Builder(
+                builder: (_) {
+                  final root = widget.analysisResult ?? {};
+                  final analysis = Map<String, dynamic>.from(root['analysis'] ?? {});
+                  final estimate = Map<String, dynamic>.from(root['estimate'] ?? {});
+                  final counts = Map<String, dynamic>.from(
+                    analysis['damage_counts'] ?? {},
+                  );
+                  final percentage = (analysis['damage_percentage'] ?? 0).toString();
+                  final labels = counts.entries
+                      .map((e) => '${e.key} (${e.value})')
+                      .join(', ');
+
+                  final severity = (estimate['severity'] ?? 'unknown').toString();
+                  final estimatedCost = Map<String, dynamic>.from(
+                    estimate['estimated_cost'] ?? {},
+                  );
+                  final breakdown = Map<String, dynamic>.from(
+                    estimate['breakdown'] ?? {},
+                  );
+
+                  String formatLkr(dynamic value) {
+                    final numValue = num.tryParse('${value ?? 0}') ?? 0;
+                    final str = numValue.round().toString();
+                    final buffer = StringBuffer();
+                    for (int i = 0; i < str.length; i++) {
+                      if (i > 0 && (str.length - i) % 3 == 0) buffer.write(',');
+                      buffer.write(str[i]);
+                    }
+                    return 'LKR ${buffer.toString()}';
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'AI Preliminary Analysis',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF004AAD),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Estimated affected area: $percentage%',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        labels.isEmpty ? 'Detected damages: None clearly detected' : 'Detected damages: $labels',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'Poppins',
+                          color: Colors.black54,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Severity: ${severity[0].toUpperCase()}${severity.substring(1)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Estimated repair cost: ${formatLkr(estimatedCost['min'])} - ${formatLkr(estimatedCost['max'])}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF004AAD),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Breakdown: Parts ${formatLkr(breakdown['parts'])}, Labor ${formatLkr(breakdown['labor'])}, Paint ${formatLkr(breakdown['paint'])}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontFamily: 'Poppins',
+                          color: Colors.black54,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'This is an AI-generated preliminary result and may change after review.',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontFamily: 'Poppins',
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
@@ -1352,6 +1524,37 @@ class _Step2AICaptureState extends State<_Step2AICapture>
               SizedBox(
                 width: double.infinity,
                 height: 44,
+                child: OutlinedButton(
+                  onPressed: widget.hasAtLeastOnePhoto && !widget.isAnalyzing
+                      ? widget.onAnalyze
+                      : null,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF004AAD), width: 1.4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  child: widget.isAnalyzing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Analyze with AI',
+                          style: TextStyle(
+                            color: Color(0xFF004AAD),
+                            fontSize: 13,
+                            fontFamily: 'WorkSans',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
                 child: ElevatedButton(
                   onPressed: widget.onProceed,
                   style: ElevatedButton.styleFrom(
@@ -1363,7 +1566,9 @@ class _Step2AICaptureState extends State<_Step2AICapture>
                   child: Text(
                     widget.hasAtLeastOnePhoto
                         ? 'Proceed to Review'
-                        : 'Capture photos to proceed',
+                        : (!widget.hasAtLeastOnePhoto
+                            ? 'Capture an image to proceed'
+                            : 'Run AI analysis to proceed'),
                     style: TextStyle(
                       color: widget.hasAtLeastOnePhoto
                           ? Colors.white

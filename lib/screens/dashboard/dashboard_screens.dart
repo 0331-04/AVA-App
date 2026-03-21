@@ -502,25 +502,64 @@ class _ActiveClaimBanner extends StatelessWidget {
     required this.accessToken,
   });
 
+  String _formatDate(dynamic value) {
+    if (value == null) return 'N/A';
+    final raw = value.toString();
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
+  }
+
+  String _formatLKR(int amount) {
+    final str = amount.toString();
+    final result = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) result.write(',');
+      result.write(str[i]);
+    }
+    return 'LKR ${result.toString()}';
+  }
+
+  
+Color _severityColor(String s) {
+  switch (s.toLowerCase()) {
+    case 'minor':
+      return Colors.green;
+    case 'moderate':
+      return Colors.orange;
+    case 'major':
+    case 'severe':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
+
+String _titleCase(String value) {
+    if (value.isEmpty) return value;
+    return value[0].toUpperCase() + value.substring(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+          child: CircularProgressIndicator(color: Colors.white),
         ),
       );
     }
@@ -528,14 +567,21 @@ class _ActiveClaimBanner extends StatelessWidget {
     if (claim == null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1A56DB).withOpacity(0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,16 +591,16 @@ class _ActiveClaimBanner extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
-                fontFamily: 'Inter',
+                fontFamily: 'Poppins',
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 6),
             Text(
-              'Submit a claim and it will appear here.',
+              'Submit a claim to see AI insights and live claim progress here.',
               style: TextStyle(
                 color: Colors.white70,
-                fontSize: 12,
+                fontSize: 10,
                 fontFamily: 'Inter',
               ),
             ),
@@ -563,39 +609,42 @@ class _ActiveClaimBanner extends StatelessWidget {
       );
     }
 
-    final claimNumber =
-        '#${(claim!['claimNumber'] ?? claim!['id'] ?? 'Unknown').toString()}';
-    final statusRaw = (claim!['status'] ?? 'pending').toString();
-    final status = _displayStatus(statusRaw);
+    final claimId = '#${(claim!['claimNumber'] ?? claim!['id'] ?? 'Unknown').toString()}';
+    final status = _displayStatus((claim!['status'] ?? 'pending').toString());
+    final currentStep = _stepFromStatus((claim!['status'] ?? 'pending').toString());
+
     final vehicle = (claim!['vehicle'] as Map?) ?? {};
     final make = (vehicle['make'] ?? '').toString();
     final model = (vehicle['model'] ?? '').toString();
-    final incidentDescription =
-        (claim!['incidentDescription'] ?? 'No description').toString();
-    final submittedDate = 'Filed: ${_formatDate(claim!['submittedAt'])}';
-    final currentStep = _stepFromStatus(statusRaw);
+    final year = (vehicle['year'] ?? '').toString();
+    final vehicleText = [make, model, year].where((e) => e.trim().isNotEmpty).join(' ');
 
-    final vehicleTitle =
-        [make, model].where((e) => e.trim().isNotEmpty).join(' ');
-    final summary = vehicleTitle.isEmpty
-        ? incidentDescription
-        : '$vehicleTitle — $incidentDescription';
+    final submittedDate = _formatDate(claim!['submittedAt']);
+
+    final damageAnalysis = (claim!['damageAnalysis'] as Map?) ?? {};
+    final severity = _titleCase((damageAnalysis['overallSeverity'] ?? 'Unknown').toString());
+    final drivable = damageAnalysis['drivable'];
+    final totalEstimatedCost = (damageAnalysis['totalEstimatedCost'] as Map?) ?? {};
+    final minCost = totalEstimatedCost['min'] is num ? (totalEstimatedCost['min'] as num).toInt() : 0;
+    final maxCost = totalEstimatedCost['max'] is num ? (totalEstimatedCost['max'] as num).toInt() : 0;
+
+    final damageText = (claim!['incidentDescription'] ?? 'Damage report submitted').toString();
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A56DB).withOpacity(0.28),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: const Color(0xFF1A56DB).withOpacity(0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -603,94 +652,113 @@ class _ActiveClaimBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.assignment_outlined,
-                color: Colors.white70,
-                size: 17,
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.assignment_outlined,
+                        color: Colors.white70, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Active Claim $claimId',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Active Claim $claimNumber',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: _StatusChip(status: status),
-                ),
-              ),
+              _StatusChip(status: status),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
-            summary,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            vehicleText.isEmpty ? 'Unknown Vehicle' : vehicleText,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.92),
-              fontSize: 13,
+              color: Colors.white.withOpacity(0.95),
+              fontSize: 14,
               fontFamily: 'Inter',
-              fontWeight: FontWeight.w500,
-              height: 1.35,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           Text(
-            submittedDate,
+            damageText,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
+              color: Colors.white.withOpacity(0.85),
+              fontSize: 10,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Filed: $submittedDate',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.65),
               fontSize: 11,
               fontFamily: 'Inter',
             ),
           ),
-          const SizedBox(height: 16),
-          _ClaimStepProgress(currentStep: currentStep),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _BannerInfoChip(
+                label: 'Severity',
+                value: severity,
+              ),
+              if (minCost > 0 || maxCost > 0)
+                _BannerInfoChip(
+                  label: 'Estimate',
+                  value: '${_formatLKR(minCost)} - ${_formatLKR(maxCost)}',
+                ),
+              if (drivable is bool)
+                _BannerInfoChip(
+                  label: 'Vehicle',
+                  value: drivable ? 'Likely drivable' : 'Inspection needed',
+                ),
+            ],
+          ),
           const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ClaimStatusScreen(
-                    accessToken: accessToken,
-                  ),
+          _ClaimStepProgress(currentStep: currentStep),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ClaimStatusScreen(
+                  accessToken: accessToken,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'View full details',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
-                      fontSize: 12,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.white70,
-                    ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'View full details',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 12,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Colors.white70,
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white70,
-                    size: 11,
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Colors.white70, size: 11),
+              ],
             ),
           ),
         ],
@@ -699,71 +767,47 @@ class _ActiveClaimBanner extends StatelessWidget {
   }
 }
 
-class _ClaimSelector extends StatelessWidget {
-  final List<Map<String, dynamic>> claims;
-  final int selectedIndex;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+class _BannerInfoChip extends StatelessWidget {
+  final String label;
+  final String value;
 
-  const _ClaimSelector({
-    required this.claims,
-    required this.selectedIndex,
-    required this.onPrevious,
-    required this.onNext,
+  const _BannerInfoChip({
+    required this.label,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (claims.isEmpty) return const SizedBox.shrink();
-
-    final selected = claims[selectedIndex];
-    final claimNumber =
-        '#${(selected['claimNumber'] ?? selected['id'] ?? 'Unknown').toString()}';
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF4FB),
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.18)),
       ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: selectedIndex > 0 ? onPrevious : null,
-            icon: const Icon(Icons.chevron_left),
-            color: const Color(0xFF1A56DB),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                const Text(
-                  'Showing claim',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'Poppins',
-                    color: Colors.black54,
-                  ),
-                ),
-                Text(
-                  claimNumber,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A56DB),
-                  ),
-                ),
-              ],
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: selectedIndex < claims.length - 1 ? onNext : null,
-            icon: const Icon(Icons.chevron_right),
-            color: const Color(0xFF1A56DB),
-          ),
-        ],
+            TextSpan(
+              text: value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -906,6 +950,104 @@ class _ClaimStepProgress extends StatelessWidget {
 // ----------------------------------------------------------
 // SEARCH BAR
 // ----------------------------------------------------------
+
+class _ClaimSelector extends StatelessWidget {
+  final List<Map<String, dynamic>> claims;
+  final int selectedIndex;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  const _ClaimSelector({
+    required this.claims,
+    required this.selectedIndex,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (claims.isEmpty) return const SizedBox.shrink();
+
+    final selected = claims[selectedIndex];
+    final claimNumber = '#${(selected['claimNumber'] ?? selected['id'] ?? 'Unknown').toString()}';
+    final status = _displayStatus((selected['status'] ?? 'pending').toString());
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F6FB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: selectedIndex > 0 ? onPrevious : null,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: selectedIndex > 0 ? Colors.white : Colors.grey.shade100,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Icon(
+                Icons.chevron_left,
+                color: selectedIndex > 0 ? const Color(0xFF1A56DB) : Colors.grey.shade400,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  claimNumber,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A56DB),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Viewing claim ${selectedIndex + 1} of ${claims.length} • $status',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'Poppins',
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: selectedIndex < claims.length - 1 ? onNext : null,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: selectedIndex < claims.length - 1 ? Colors.white : Colors.grey.shade100,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Icon(
+                Icons.chevron_right,
+                color: selectedIndex < claims.length - 1 ? const Color(0xFF1A56DB) : Colors.grey.shade400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
 class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1049,6 +1191,21 @@ class _QuickStats extends StatelessWidget {
     required this.isLoading,
   });
 
+  String _formatLKR(int amount) {
+    final str = amount.toString();
+    final result = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) result.write(',');
+      result.write(str[i]);
+    }
+    return 'LKR ${result.toString()}';
+  }
+
+  String _titleCase(String value) {
+    if (value.isEmpty) return value;
+    return value[0].toUpperCase() + value.substring(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -1088,8 +1245,28 @@ class _QuickStats extends StatelessWidget {
     final progress = claim == null ? 0.0 : _progressFromStatus(statusRaw);
     final displayStatus =
         claim == null ? 'No claims yet' : _displayStatus(statusRaw);
+
     final photos = claim?['photos'];
     final photoCount = photos is List ? photos.length : 0;
+
+    final damageAnalysis = (claim?['damageAnalysis'] as Map?) ?? {};
+    final damages = (damageAnalysis['damages'] as List?) ?? [];
+    final severityRaw = (damageAnalysis['overallSeverity'] ?? 'unknown').toString();
+    final severity = _titleCase(severityRaw);
+
+    final totalEstimatedCost =
+        (damageAnalysis['totalEstimatedCost'] as Map?) ?? {};
+    final minCost = totalEstimatedCost['min'] is num
+        ? (totalEstimatedCost['min'] as num).toInt()
+        : 0;
+    final maxCost = totalEstimatedCost['max'] is num
+        ? (totalEstimatedCost['max'] as num).toInt()
+        : 0;
+
+    final confidenceRaw = damageAnalysis['confidence'];
+    final confidence = confidenceRaw is num
+        ? ((confidenceRaw.toDouble()) * 100).round()
+        : 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1124,7 +1301,7 @@ class _QuickStats extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Your selected claim update:',
+                'Selected claim insights:',
                 style: TextStyle(
                   fontSize: 13,
                   fontFamily: 'Inter',
@@ -1156,7 +1333,7 @@ class _QuickStats extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 claim == null
                     ? 'Submit a claim to see progress here.'
@@ -1164,14 +1341,101 @@ class _QuickStats extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   fontFamily: 'Inter',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A56DB),
+                  color: Colors.black54,
+                  height: 1.4,
                 ),
               ),
+              if (claim != null) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _MiniStat(
+                      label: 'Severity',
+                      value: severity,
+                    ),
+                    _MiniStat(
+                      label: 'Damages',
+                      value: '${damages.length}',
+                    ),
+                    _MiniStat(
+                      label: 'AI Confidence',
+                      value: '$confidence%',
+                    ),
+                  ],
+                ),
+                if (minCost > 0 || maxCost > 0) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Estimated Repair Cost',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_formatLKR(minCost)} - ${_formatLKR(maxCost)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A56DB),
+                    ),
+                  ),
+                ],
+              ],
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MiniStat({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontFamily: 'Poppins',
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A56DB),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
