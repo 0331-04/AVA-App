@@ -14,7 +14,8 @@ const {
   uploadClaimPhotos,
   getClaimPhotos,
   generateClaimReport,
-  getClaimStatistics
+  getClaimStatistics,
+  deleteClaim
 } = require('../claims/claimController');
 
 const { protect, authorize } = require('../authentication/auth');
@@ -43,6 +44,9 @@ router.put('/:id/status', protect, authorize('admin', 'claim_officer', 'assessor
 
 // Submit dispute
 router.post('/:id/dispute', protect, claimUpload.array('evidence', 5), submitDispute);
+
+// Delete a specific claim
+router.delete('/:id', protect, deleteClaim);
 
 
 // PHOTOS
