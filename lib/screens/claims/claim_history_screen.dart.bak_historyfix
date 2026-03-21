@@ -10,7 +10,6 @@ class ClaimRecord {
   final String licensePlate;
   final String damageType;
   final String submittedDate;
-  final DateTime submittedAt;
   final int estimateLKR;       // Amount in Sri Lankan Rupees
   final double progress;       // 0.0 to 1.0
   final String status;
@@ -22,7 +21,6 @@ class ClaimRecord {
     required this.licensePlate,
     required this.damageType,
     required this.submittedDate,
-    required this.submittedAt,
     required this.estimateLKR,
     required this.progress,
     required this.status,
@@ -95,29 +93,13 @@ ClaimRecord _claimFromApi(Map<String, dynamic> c) {
   final model = (vehicle['model'] ?? '').toString();
   final year = (vehicle['year'] ?? '').toString();
   final plate = (vehicle['licensePlate'] ?? '').toString();
-  final incidentType = (
-    c['incidentType'] ??
-    c['damageType'] ??
-    c['description'] ??
-    c['incidentDescription'] ??
-    'Unknown damage'
-  ).toString();
-  final estimatedAmount =
-      c['estimatedAmount'] ??
-      c['estimate'] ??
-      c['totalEstimate'] ??
-      0;
+  final incidentType = (c['incidentType'] ?? 'Unknown damage').toString();
+  final estimatedAmount = c['estimatedAmount'];
   final status = (c['status'] ?? 'pending').toString();
   final photos = c['photos'];
   final claimNumber = (c['claimNumber'] ?? c['id'] ?? '').toString();
-  final rawDate = DateTime.tryParse(c['submittedAt']?.toString() ?? '');
 
-  final vehicleText = [
-    make,
-    model,
-    if (year.isNotEmpty) '($year)',
-  ].where((e) => e.trim().isNotEmpty).join(' ');
-
+  final vehicleText = [make, model, year].where((e) => e.trim().isNotEmpty).join(' ');
   final amount = estimatedAmount is num
       ? estimatedAmount.toInt()
       : int.tryParse(estimatedAmount?.toString() ?? '') ?? 0;
@@ -129,7 +111,6 @@ ClaimRecord _claimFromApi(Map<String, dynamic> c) {
     licensePlate: plate.isEmpty ? 'N/A' : plate,
     damageType: incidentType.replaceAll('_', ' '),
     submittedDate: _formatDate(c['submittedAt']),
-    submittedAt: rawDate ?? DateTime.now(),
     estimateLKR: amount,
     progress: _progressFromStatus(status),
     status: _displayStatus(status),
@@ -216,8 +197,7 @@ class _ClaimHistoryScreenState extends State<ClaimHistoryScreen> {
           c.vehicle.toLowerCase().contains(q) ||
           c.claimId.toLowerCase().contains(q) ||
           c.licensePlate.toLowerCase().contains(q) ||
-          c.damageType.toLowerCase().contains(q) ||
-          c.status.toLowerCase().contains(q);
+          c.damageType.toLowerCase().contains(q);
 
       return matchesFilter && matchesSearch;
     }).toList();
@@ -241,8 +221,7 @@ class _ClaimHistoryScreenState extends State<ClaimHistoryScreen> {
 
       if (!mounted) return;
       setState(() {
-        _claims = result.map(_claimFromApi).toList()
-          ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+        _claims = result.map(_claimFromApi).toList();
         _isLoading = false;
         _errorMessage = null;
       });

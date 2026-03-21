@@ -248,7 +248,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
-          _BottomNavBar(onReportClaim: _goToReportClaim, accessToken: widget.accessToken),
+          _BottomNavBar(onReportClaim: _goToReportClaim),
         ],
       ),
     );
@@ -1262,11 +1262,7 @@ class _TipCard extends StatelessWidget {
 // ----------------------------------------------------------
 class _BottomNavBar extends StatelessWidget {
   final VoidCallback onReportClaim;
-  final String? accessToken;
-  const _BottomNavBar({
-    required this.onReportClaim,
-    required this.accessToken,
-  });
+  const _BottomNavBar({required this.onReportClaim});
 
   @override
   Widget build(BuildContext context) {
@@ -1289,7 +1285,7 @@ class _BottomNavBar extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ProfileScreen(accessToken: accessToken)),
+                MaterialPageRoute(builder: (_) => ProfileScreen(accessToken: widget.accessToken)),
               );
             },
             child: const Icon(

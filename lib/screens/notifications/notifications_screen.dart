@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-
+import '../../services/claim_service.dart';
 
 class AppNotification {
   final String id;
@@ -24,77 +23,175 @@ class AppNotification {
 
 enum NotifType { claimUpdate, payment, reminder, ai, system }
 
-// TODO: Replace with real notifications from the backend API
-List<AppNotification> _mockNotifications = [
-  AppNotification(
-    id: '1',
-    title: 'Claim Approved!',
-    body: 'Your claim #CLM-1039 has been approved. Payment of LKR 980,000 will be processed within 3 working days.',
-    time: '9:15 AM',
-    group: 'Today',
-    type: NotifType.claimUpdate,
+String _formatTime(dynamic value) {
+  if (value == null) return '';
+  final dt = DateTime.tryParse(value.toString());
+  if (dt == null) return '';
+  final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+  final minute = dt.minute.toString().padLeft(2, '0');
+  final suffix = dt.hour >= 12 ? 'PM' : 'AM';
+  return '$hour:$minute $suffix';
+}
+
+String _groupForDate(dynamic value) {
+  if (value == null) return 'Earlier';
+  final dt = DateTime.tryParse(value.toString());
+  if (dt == null) return 'Earlier';
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final thatDay = DateTime(dt.year, dt.month, dt.day);
+  final diff = today.difference(thatDay).inDays;
+
+  if (diff <= 0) return 'Today';
+  if (diff == 1) return 'Yesterday';
+  return 'Earlier';
+}
+
+AppNotification _notifFromClaim(Map<String, dynamic> c) {
+  final claimNumber = (c['claimNumber'] ?? c['id'] ?? 'Unknown').toString();
+  final status = (c['status'] ?? 'pending').toString();
+  final submittedAt = c['submittedAt'];
+  final amount = c['approvedAmount'] ?? c['estimatedAmount'] ?? 0;
+  final incidentDescription =
+      (c['incidentDescription'] ?? 'Claim update available').toString();
+
+  String title;
+  String body;
+  NotifType type;
+
+  switch (status.toLowerCase()) {
+    case 'approved':
+      title = 'Claim Approved';
+      body =
+          'Your claim #$claimNumber has been approved. Approved amount: LKR $amount.';
+      type = NotifType.payment;
+      break;
+    case 'rejected':
+      title = 'Claim Rejected';
+      body =
+          'Your claim #$claimNumber was rejected. Check claim status for more details.';
+      type = NotifType.claimUpdate;
+      break;
+    case 'documents_review':
+      title = 'Claim Under Review';
+      body =
+          'Your claim #$claimNumber is under document review. We are checking your submitted details.';
+      type = NotifType.claimUpdate;
+      break;
+    case 'damage_assessment':
+      title = 'Damage Assessment In Progress';
+      body =
+          'AI/manual damage assessment is in progress for claim #$claimNumber.';
+      type = NotifType.ai;
+      break;
+    case 'investigation':
+      title = 'Claim Investigation Update';
+      body =
+          'Your claim #$claimNumber is currently being investigated.';
+      type = NotifType.claimUpdate;
+      break;
+    case 'settled':
+    case 'closed':
+      title = 'Payment Processing';
+      body =
+          'Your claim #$claimNumber has progressed to payment/closure stage.';
+      type = NotifType.payment;
+      break;
+    case 'disputed':
+      title = 'Dispute Submitted';
+      body =
+          'Your dispute for claim #$claimNumber has been submitted and is under review.';
+      type = NotifType.reminder;
+      break;
+    case 'pending':
+    default:
+      title = 'Claim Submitted';
+      body =
+          'Your claim #$claimNumber has been submitted successfully. $incidentDescription';
+      type = NotifType.claimUpdate;
+      break;
+  }
+
+  return AppNotification(
+    id: claimNumber,
+    title: title,
+    body: body,
+    time: _formatTime(submittedAt),
+    group: _groupForDate(submittedAt),
+    type: type,
     isRead: false,
-  ),
-  AppNotification(
-    id: '2',
-    title: 'AI Analysis Complete',
-    body: 'AI has completed damage analysis for claim #CLM-1042 with 91% confidence. Assessor review initiated.',
-    time: '7:42 AM',
-    group: 'Today',
-    type: NotifType.ai,
-    isRead: false,
-  ),
-  AppNotification(
-    id: '3',
-    title: 'Payment Processing',
-    body: 'Payment of LKR 375,000 for claim #CLM-1042 is now being processed by your insurer.',
-    time: '11:30 AM',
-    group: 'Yesterday',
-    type: NotifType.payment,
-    isRead: false,
-  ),
-  AppNotification(
-    id: '4',
-    title: 'Upload Reminder',
-    body: 'Your claim #CLM-1041 is missing 1 photo. Please upload the wide-angle shot to avoid delays.',
-    time: '3:00 PM',
-    group: 'Yesterday',
-    type: NotifType.reminder,
-    isRead: true,
-  ),
-  AppNotification(
-    id: '5',
-    title: 'Claim Submitted',
-    body: 'Your new claim #CLM-1042 has been successfully submitted and is under review.',
-    time: 'Nov 20',
-    group: 'Earlier',
-    type: NotifType.claimUpdate,
-    isRead: true,
-  ),
-  AppNotification(
-    id: '6',
-    title: 'System Maintenance',
-    body: 'AVA-Inspec will undergo scheduled maintenance on Dec 1 from 2:00–4:00 AM. The app may be temporarily unavailable.',
-    time: 'Nov 18',
-    group: 'Earlier',
-    type: NotifType.system,
-    isRead: true,
-  ),
-];
+  );
+}
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+  final String? accessToken;
+
+  const NotificationsScreen({
+    super.key,
+    this.accessToken,
+  });
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  List<AppNotification> _notifications = List.from(_mockNotifications);
+  final ClaimService _claimService = ClaimService();
   final _searchController = TextEditingController();
+
+  List<AppNotification> _notifications = [];
   String _searchQuery = '';
+  bool _isLoading = true;
+  String? _error;
 
   int get _unreadCount => _notifications.where((n) => !n.isRead).length;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    if (widget.accessToken == null || widget.accessToken!.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _notifications = [];
+        _isLoading = false;
+        _error = 'Missing access token';
+      });
+      return;
+    }
+
+    try {
+      final claims =
+          await _claimService.getClaims(accessToken: widget.accessToken!);
+
+      final notifications = claims.map(_notifFromClaim).toList();
+
+      notifications.sort((a, b) {
+        const order = {'Today': 0, 'Yesterday': 1, 'Earlier': 2};
+        final ga = order[a.group] ?? 3;
+        final gb = order[b.group] ?? 3;
+        if (ga != gb) return ga.compareTo(gb);
+        return b.time.compareTo(a.time);
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _notifications = notifications;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _notifications = [];
+        _isLoading = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
 
   void _markAllRead() {
     setState(() {
@@ -109,8 +206,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear all notifications?',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Clear all notifications?',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700),
+        ),
         content: const Text(
           'This will remove all notifications from your list.',
           style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
@@ -118,8 +217,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.grey.shade600)),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                color: Colors.grey.shade600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -128,10 +232,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF004AAD),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Clear All',
-                style: TextStyle(fontFamily: 'Poppins', color: Colors.white)),
+            child: const Text(
+              'Clear All',
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -157,10 +265,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   List<AppNotification> get _filtered {
     if (_searchQuery.isEmpty) return _notifications;
-    return _notifications.where((n) =>
-      n.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      n.body.toLowerCase().contains(_searchQuery.toLowerCase())
-    ).toList();
+    return _notifications.where((n) {
+      final q = _searchQuery.toLowerCase();
+      return n.title.toLowerCase().contains(q) ||
+          n.body.toLowerCase().contains(q);
+    }).toList();
   }
 
   Map<String, List<AppNotification>> get _grouped {
@@ -185,7 +294,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             onMarkAllRead: _unreadCount > 0 ? _markAllRead : null,
             onClearAll: _notifications.isNotEmpty ? _clearAll : null,
           ),
-          // Search bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
@@ -195,83 +303,133 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               decoration: InputDecoration(
                 hintText: 'Search notifications...',
                 hintStyle: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Colors.grey.shade400),
-                prefixIcon: Icon(Icons.search,
-                    color: Colors.grey.shade400, size: 20),
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Colors.grey.shade400,
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Colors.grey.shade400,
+                  size: 20,
+                ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? GestureDetector(
                         onTap: () {
                           _searchController.clear();
                           setState(() => _searchQuery = '');
                         },
-                        child: Icon(Icons.close,
-                            color: Colors.grey.shade400, size: 18),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.grey.shade400,
+                          size: 18,
+                        ),
                       )
                     : null,
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.grey.shade200),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                      color: Color(0xFF004AAD), width: 1.5),
+                  borderSide:
+                      const BorderSide(color: Color(0xFF004AAD), width: 1.5),
                 ),
               ),
             ),
           ),
           Expanded(
-            child: _filtered.isEmpty
-                ? _EmptyState()
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                    children: grouped.entries.map((entry) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8, top: 4),
-                            child: Text(
-                              entry.key,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w700,
-                                color: Colors.grey.shade500,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          ...entry.value.map((notif) => Dismissible(
-                                key: Key(notif.id),
-                                direction: DismissDirection.endToStart,
-                                onDismissed: (_) => _dismiss(notif.id),
-                                background: Container(
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.only(right: 20),
-                                  margin: const EdgeInsets.only(bottom: 10),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF004AAD),
+                    ),
+                  )
+                : RefreshIndicator(
+                    color: const Color(0xFF004AAD),
+                    onRefresh: _loadNotifications,
+                    child: _filtered.isEmpty
+                        ? _EmptyState(message: _error)
+                        : ListView(
+                            padding:
+                                const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                            children: [
+                              if (_error != null)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.shade400,
-                                    borderRadius: BorderRadius.circular(14),
+                                    color: Colors.red.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.red.withOpacity(0.2),
+                                    ),
                                   ),
-                                  child: const Icon(Icons.delete_outline,
-                                      color: Colors.white, size: 24),
+                                  child: Text(
+                                    _error!,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontFamily: 'Poppins',
+                                      color: Colors.red,
+                                    ),
+                                  ),
                                 ),
-                                child: _NotifCard(
-                                  notif: notif,
-                                  onTap: () => _markRead(notif.id),
-                                ),
-                              )),
-                          const SizedBox(height: 4),
-                        ],
-                      );
-                    }).toList(),
+                              ...grouped.entries.map((entry) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          bottom: 8, top: 4),
+                                      child: Text(
+                                        entry.key,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.grey.shade500,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    ...entry.value.map(
+                                      (notif) => Dismissible(
+                                        key: Key(notif.id),
+                                        direction:
+                                            DismissDirection.endToStart,
+                                        onDismissed: (_) => _dismiss(notif.id),
+                                        background: Container(
+                                          alignment: Alignment.centerRight,
+                                          padding:
+                                              const EdgeInsets.only(right: 20),
+                                          margin: const EdgeInsets.only(
+                                              bottom: 10),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade400,
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                          ),
+                                          child: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                        ),
+                                        child: _NotifCard(
+                                          notif: notif,
+                                          onTap: () => _markRead(notif.id),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+                                );
+                              }),
+                            ],
+                          ),
                   ),
           ),
         ],
@@ -281,7 +439,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 }
 
 // ----------------------------------------------------------
-//  HEADER
+// HEADER
 // ----------------------------------------------------------
 class _NotifHeader extends StatelessWidget {
   final int unreadCount;
@@ -321,8 +479,11 @@ class _NotifHeader extends StatelessWidget {
                           color: Colors.white.withOpacity(0.15),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new,
-                            color: Colors.white, size: 16),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                     const Text(
@@ -362,9 +523,10 @@ class _NotifHeader extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         shadows: [
                           Shadow(
-                              offset: Offset(0, 4),
-                              blurRadius: 4,
-                              color: Color(0x40000000)),
+                            offset: Offset(0, 4),
+                            blurRadius: 4,
+                            color: Color(0x40000000),
+                          ),
                         ],
                       ),
                     ),
@@ -429,7 +591,7 @@ class _HeaderClipper extends CustomClipper<Path> {
 }
 
 // ----------------------------------------------------------
-//  NOTIFICATION CARD
+// NOTIFICATION CARD
 // ----------------------------------------------------------
 class _NotifCard extends StatelessWidget {
   final AppNotification notif;
@@ -439,21 +601,31 @@ class _NotifCard extends StatelessWidget {
 
   Color get _typeColor {
     switch (notif.type) {
-      case NotifType.claimUpdate: return const Color(0xFF004AAD);
-      case NotifType.payment:     return Colors.green.shade600;
-      case NotifType.reminder:    return Colors.orange.shade600;
-      case NotifType.ai:          return Colors.purple.shade600;
-      case NotifType.system:      return Colors.grey.shade600;
+      case NotifType.claimUpdate:
+        return const Color(0xFF004AAD);
+      case NotifType.payment:
+        return Colors.green.shade600;
+      case NotifType.reminder:
+        return Colors.orange.shade600;
+      case NotifType.ai:
+        return Colors.purple.shade600;
+      case NotifType.system:
+        return Colors.grey.shade600;
     }
   }
 
   IconData get _typeIcon {
     switch (notif.type) {
-      case NotifType.claimUpdate: return Icons.assignment_outlined;
-      case NotifType.payment:     return Icons.payments_outlined;
-      case NotifType.reminder:    return Icons.notification_important_outlined;
-      case NotifType.ai:          return Icons.auto_awesome;
-      case NotifType.system:      return Icons.info_outline;
+      case NotifType.claimUpdate:
+        return Icons.assignment_outlined;
+      case NotifType.payment:
+        return Icons.payments_outlined;
+      case NotifType.reminder:
+        return Icons.notification_important_outlined;
+      case NotifType.ai:
+        return Icons.auto_awesome;
+      case NotifType.system:
+        return Icons.info_outline;
     }
   }
 
@@ -557,39 +729,48 @@ class _NotifCard extends StatelessWidget {
   }
 }
 
-// ----------------------------------------------------------
-//  EMPTY STATE
-// ----------------------------------------------------------
 class _EmptyState extends StatelessWidget {
+  final String? message;
+  const _EmptyState({this.message});
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.notifications_off_outlined,
-              size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            'No notifications',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade500,
-            ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 120),
+        Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.notifications_off_outlined,
+                size: 64,
+                color: Colors.grey.shade300,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No notifications',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message ?? "You're all caught up!",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Poppins',
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            "You're all caught up!",
-            style: TextStyle(
-              fontSize: 12,
-              fontFamily: 'Poppins',
-              color: Colors.grey.shade400,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
