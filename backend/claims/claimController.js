@@ -9,6 +9,39 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
+
+const mapAnalysisToClaimDamageAnalysis = (raw) => {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const analysis = raw.analysis && typeof raw.analysis === 'object' ? raw.analysis : raw;
+  const estimate = raw.estimate && typeof raw.estimate === 'object' ? raw.estimate : {};
+
+  const damageCounts = analysis.damage_counts || {};
+  const estimatedCost = estimate.estimated_cost || {};
+  const severity = estimate.severity || 'minor';
+
+  const damages = Object.entries(damageCounts).flatMap(([type, count]) =>
+    Array.from({ length: Number(count || 0) }, () => type)
+  );
+
+  return {
+    totalDamages: Object.values(damageCounts).reduce((sum, v) => sum + Number(v || 0), 0),
+    damages,
+    overallSeverity: ['minor', 'moderate', 'severe', 'critical'].includes(severity)
+      ? severity
+      : (severity === 'major' ? 'severe' : 'minor'),
+    drivable: Number(analysis.damage_percentage || 0) < 30,
+    requiresProfessionalInspection: Number(analysis.damage_percentage || 0) >= 15,
+    totalEstimatedCost: {
+      min: Number(estimatedCost.min || 0),
+      max: Number(estimatedCost.max || 0)
+    },
+    confidence: damageCounts && Object.keys(damageCounts).length > 0 ? 0.8 : 0.4,
+    analyzedAt: new Date()
+  };
+};
+
+
 const safeJsonParse = (value) => {
   if (!value) return {};
   if (typeof value === 'object') return value;
@@ -96,6 +129,18 @@ exports.submitClaim = async (req, res) => {
       city: incidentCity || ''
     };
 
+    let parsedDamageAnalysis = null;
+    if (damageAnalysis) {
+      try {
+        const rawDamageAnalysis = typeof damageAnalysis === 'string'
+          ? JSON.parse(damageAnalysis)
+          : damageAnalysis;
+        parsedDamageAnalysis = mapAnalysisToClaimDamageAnalysis(rawDamageAnalysis);
+      } catch (_) {
+        parsedDamageAnalysis = null;
+      }
+    }
+
     // Create claim
     const claim = await Claim.create({
       userId: req.user.id,
@@ -114,7 +159,7 @@ exports.submitClaim = async (req, res) => {
       policeReport,
       thirdParty,
       witnesses,
-      damageAnalysis,
+      damageAnalysis: parsedDamageAnalysis,
       status: 'pending',
       submittedAt: Date.now()
     });

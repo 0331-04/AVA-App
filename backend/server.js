@@ -21,10 +21,12 @@ const claimRoutes = require('./claims/claimRoutes');
 
 
 const userProfileRoutes = require('./userprofile/userRoute');
+const mlRoutes = require('./ml/mlRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userProfileRoutes);
 app.use('/api/claims', claimRoutes);
+app.use('/api/ml', mlRoutes);
 
 
 

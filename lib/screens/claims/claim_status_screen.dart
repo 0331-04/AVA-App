@@ -111,6 +111,17 @@ int _stepFromStatus(String status) {
   }
 }
 
+Map<String, dynamic> _latestClaim(List<Map<String, dynamic>> claims) {
+  if (claims.isEmpty) return {};
+  final sorted = List<Map<String, dynamic>>.from(claims);
+  sorted.sort((a, b) {
+    final aDate = DateTime.tryParse((a['submittedAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bDate = DateTime.tryParse((b['submittedAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bDate.compareTo(aDate);
+  });
+  return sorted.first;
+}
+
 ClaimStatusData _claimStatusFromApi(Map<String, dynamic> c) {
   final vehicle = (c['vehicle'] as Map?) ?? {};
   final make = (vehicle['make'] ?? '').toString();
@@ -120,8 +131,9 @@ ClaimStatusData _claimStatusFromApi(Map<String, dynamic> c) {
 
   final vehicleText =
       [make, model, year].where((e) => e.trim().isNotEmpty).join(' ');
+
   final estimatedAmount = c['estimatedAmount'];
-  final total = estimatedAmount is num
+  final estimatedAmountValue = estimatedAmount is num
       ? estimatedAmount.toInt()
       : int.tryParse(estimatedAmount?.toString() ?? '') ?? 0;
 
@@ -132,20 +144,46 @@ ClaimStatusData _claimStatusFromApi(Map<String, dynamic> c) {
       ? aiConfidenceRaw.toDouble()
       : double.tryParse(aiConfidenceRaw?.toString() ?? '') ?? 0.0;
 
-  final minEstimate = totalEstimatedCost['min'];
-  final maxEstimate = totalEstimatedCost['max'];
-  final parts = maxEstimate is num
-      ? (maxEstimate.toDouble() * 0.65).toInt()
-      : (total * 0.65).toInt();
-  final labour = minEstimate is num
-      ? (minEstimate.toDouble() * 0.25).toInt()
-      : (total * 0.25).toInt();
-  final other = (total - labour - parts).clamp(0, total);
+  final minEstimate = totalEstimatedCost['min'] is num
+      ? (totalEstimatedCost['min'] as num).toInt()
+      : 0;
+  final maxEstimate = totalEstimatedCost['max'] is num
+      ? (totalEstimatedCost['max'] as num).toInt()
+      : 0;
+
+  final total = maxEstimate > 0 ? maxEstimate : estimatedAmountValue;
+  final parts = total > 0 ? (total * 0.50).toInt() : 0;
+  final labour = total > 0 ? (total * 0.30).toInt() : 0;
+  final other = total > 0 ? (total - labour - parts).clamp(0, total) : 0;
 
   final photos = c['photos'];
   final status = (c['status'] ?? 'pending').toString();
   final incidentDescription =
       (c['incidentDescription'] ?? 'No description').toString();
+
+  final damagesRaw = damageAnalysis['damages'];
+  final damages = damagesRaw is List
+      ? damagesRaw.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList()
+      : <String>[];
+
+  final severity = (damageAnalysis['overallSeverity'] ?? '').toString();
+  final drivable = damageAnalysis['drivable'];
+  final needsInspection = damageAnalysis['requiresProfessionalInspection'];
+
+  final notes = <String>[
+    'Status: ${_displayStatus(status)}',
+    if (incidentDescription.isNotEmpty) incidentDescription,
+    if (severity.isNotEmpty)
+      'AI severity: ${severity[0].toUpperCase()}${severity.substring(1)}',
+    if (damages.isNotEmpty)
+      'Detected damages: ${damages.join(', ')}',
+    if (minEstimate > 0 || maxEstimate > 0)
+      'Estimated repair cost: ${ClaimStatusScreen.formatLKR(minEstimate)} - ${ClaimStatusScreen.formatLKR(maxEstimate)}',
+    if (drivable is bool)
+      drivable ? 'Vehicle likely drivable' : 'Vehicle may not be safely drivable',
+    if (needsInspection is bool && needsInspection)
+      'Professional inspection recommended',
+  ];
 
   return ClaimStatusData(
     claimId: '#${(c['claimNumber'] ?? c['id'] ?? 'Unknown').toString()}',
@@ -153,7 +191,11 @@ ClaimStatusData _claimStatusFromApi(Map<String, dynamic> c) {
     licensePlate: plate,
     damageType: incidentDescription,
     submittedDate: _formatDate(c['submittedAt']),
-    estimatedCompletion: 'Pending',
+    estimatedCompletion: _displayStatus(status) == 'Approved'
+        ? 'Completed'
+        : _displayStatus(status) == 'Payment Processing'
+            ? 'Finalizing'
+            : 'Pending',
     estimateLKR: total,
     labourLKR: labour,
     partsLKR: parts,
@@ -161,10 +203,7 @@ ClaimStatusData _claimStatusFromApi(Map<String, dynamic> c) {
     aiConfidence: aiConfidence,
     currentStatus: _displayStatus(status),
     currentStepIndex: _stepFromStatus(status),
-    assessorNotes: [
-      'Status: ${_displayStatus(status)}',
-      if (incidentDescription.isNotEmpty) incidentDescription,
-    ],
+    assessorNotes: notes,
     photosUploaded: photos is List ? photos.length : 0,
   );
 }
@@ -196,6 +235,8 @@ class ClaimStatusScreen extends StatefulWidget {
 class _ClaimStatusScreenState extends State<ClaimStatusScreen> {
   final ClaimService _claimService = ClaimService();
   late ClaimStatusData _claim;
+  List<ClaimStatusData> _claims = [];
+  int _selectedClaimIndex = 0;
   bool _isLoading = true;
   String? _error;
 
@@ -204,6 +245,8 @@ class _ClaimStatusScreenState extends State<ClaimStatusScreen> {
     super.initState();
     _claim = widget.claim ?? _emptyClaim();
     if (widget.claim != null) {
+      _claims = [widget.claim!];
+      _selectedClaimIndex = 0;
       _isLoading = false;
     } else {
       _loadClaim();
@@ -227,22 +270,37 @@ class _ClaimStatusScreenState extends State<ClaimStatusScreen> {
 
       if (claims.isEmpty) {
         setState(() {
-          _claim = _emptyClaim();
+          _claims = [_emptyClaim()];
+          _selectedClaimIndex = 0;
+          _claim = _claims.first;
           _isLoading = false;
           _error = null;
         });
         return;
       }
 
+      final sorted = List<Map<String, dynamic>>.from(claims);
+      sorted.sort((a, b) {
+        final aDate = DateTime.tryParse((a['submittedAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = DateTime.tryParse((b['submittedAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDate.compareTo(aDate);
+      });
+
+      final mappedClaims = sorted.map(_claimStatusFromApi).toList();
+
       setState(() {
-        _claim = _claimStatusFromApi(claims.first);
+        _claims = mappedClaims;
+        _selectedClaimIndex = 0;
+        _claim = _claims.first;
         _isLoading = false;
         _error = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _claim = _emptyClaim();
+        _claims = [_emptyClaim()];
+        _selectedClaimIndex = 0;
+        _claim = _claims.first;
         _isLoading = false;
         _error = e.toString().replaceFirst('Exception: ', '');
       });
@@ -251,7 +309,9 @@ class _ClaimStatusScreenState extends State<ClaimStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final claim = _claim;
+    final claim = _claims.isNotEmpty
+        ? _claims[_selectedClaimIndex.clamp(0, _claims.length - 1)]
+        : _claim;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -273,6 +333,74 @@ class _ClaimStatusScreenState extends State<ClaimStatusScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                       child: Column(
                         children: [
+                          if (_claims.length > 1)
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Select Claim',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    height: 40,
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: _claims.length,
+                                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                      itemBuilder: (_, index) {
+                                        final item = _claims[index];
+                                        final isSelected = index == _selectedClaimIndex;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedClaimIndex = index;
+                                              _claim = _claims[index];
+                                            });
+                                          },
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 180),
+                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? const Color(0xFF004AAD)
+                                                  : Colors.white,
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? const Color(0xFF004AAD)
+                                                    : Colors.grey.shade300,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                item.claimId,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontFamily: 'Poppins',
+                                                  fontWeight: FontWeight.w600,
+                                                  color: isSelected
+                                                      ? Colors.white
+                                                      : Colors.grey.shade700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           _VehicleCard(claim: claim),
                           const SizedBox(height: 14),
                           _TimelineStepper(currentStep: claim.currentStepIndex),

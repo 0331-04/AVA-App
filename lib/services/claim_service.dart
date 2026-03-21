@@ -38,6 +38,7 @@ class ClaimService {
     required String incidentType,
     required num estimatedAmount,
     required Map<String, dynamic> incidentLocation,
+    Map<String, dynamic>? damageAnalysis,
     String? photoPath,
   }) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/claims/submit');
@@ -59,6 +60,10 @@ class ClaimService {
 
     request.fields['incidentAddress'] = (incidentLocation['address'] ?? '').toString();
     request.fields['incidentCity'] = (incidentLocation['city'] ?? '').toString();
+
+    if (damageAnalysis != null) {
+      request.fields['damageAnalysis'] = jsonEncode(damageAnalysis);
+    }
 
     if (photoPath != null && photoPath.isNotEmpty) {
       final file = File(photoPath);
@@ -87,4 +92,37 @@ class ClaimService {
       throw Exception(data['message'] ?? 'Failed to submit claim');
     }
   }
+
+  Future<Map<String, dynamic>> analyzeImage({
+    required String accessToken,
+    required String imagePath,
+  }) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/ml/analyze');
+
+    final request = http.MultipartRequest('POST', url);
+    request.headers['Authorization'] = 'Bearer $accessToken';
+
+    request.files.add(
+      await http.MultipartFile.fromPath('image', imagePath),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw Exception(
+        'Backend returned non-JSON response (status ${response.statusCode}). Check backend terminal logs.'
+      );
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return data;
+    } else {
+      throw Exception(data['message'] ?? 'Failed to analyze image');
+    }
+  }
+
 }
