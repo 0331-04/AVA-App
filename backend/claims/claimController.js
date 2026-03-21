@@ -9,6 +9,17 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
+const safeJsonParse = (value) => {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch (_) {
+    return {};
+  }
+};
+
+
 /**
  * @desc    Submit new claim
  * @route   POST /api/claims/submit
@@ -17,17 +28,23 @@ const path = require('path');
 exports.submitClaim = async (req, res) => {
   try {
     const {
-      vehicle,
       incidentDate,
       incidentTime,
-      incidentLocation,
       incidentDescription,
       incidentType,
       estimatedAmount,
       policeReport,
       thirdParty,
       witnesses,
-      damageAnalysis
+      damageAnalysis,
+      vehicleMake,
+      vehicleModel,
+      vehicleYear,
+      vehicleLicensePlate,
+      vehicleVin,
+      vehicleColor,
+      incidentAddress,
+      incidentCity
     } = req.body;
 
     // Get user details
@@ -40,18 +57,11 @@ exports.submitClaim = async (req, res) => {
       });
     }
 
-    // Validate policy
-    if (!user.policyNumber) {
-      return res.status(400).json({
-        success: false,
-        error: 'No active policy found',
-        message: 'Please activate your insurance policy before submitting a claim'
-      });
-    }
-
-    // Check if policy is active
+    // Temporary relaxed policy validation for demo
     const now = new Date();
-    if (user.policyEndDate && user.policyEndDate < now) {
+    const effectivePolicyNumber = user.policyNumber || 'DEMO-POLICY';
+
+    if (user.policyNumber && user.policyEndDate && user.policyEndDate < now) {
       return res.status(400).json({
         success: false,
         error: 'Policy expired',
@@ -72,17 +82,31 @@ exports.submitClaim = async (req, res) => {
       });
     }
 
+    const safeVehicle = {
+      make: vehicleMake || 'Unknown',
+      model: vehicleModel || 'Unknown',
+      year: Number(vehicleYear) || new Date().getFullYear(),
+      licensePlate: vehicleLicensePlate || 'UNKNOWN',
+      vin: vehicleVin || '',
+      color: vehicleColor || ''
+    };
+
+    const safeIncidentLocation = {
+      address: incidentAddress || '',
+      city: incidentCity || ''
+    };
+
     // Create claim
     const claim = await Claim.create({
       userId: req.user.id,
       userEmail: user.email,
       userName: `${user.firstName} ${user.lastName}`,
       userPhone: user.phone,
-      policyNumber: user.policyNumber,
-      vehicle,
+      policyNumber: effectivePolicyNumber,
+      vehicle: safeVehicle,
+      incidentLocation: safeIncidentLocation,
       incidentDate,
       incidentTime,
-      incidentLocation,
       incidentDescription,
       incidentType,
       estimatedAmount,

@@ -9,8 +9,7 @@ const ClaimSchema = new mongoose.Schema({
   // Claim Identification
   claimNumber: {
     type: String,
-    unique: true,
-    required: true
+    unique: true
   },
   
   // User Reference
@@ -361,15 +360,14 @@ ClaimSchema.index({ 'vehicle.licensePlate': 1 });
 // PRE-SAVE MIDDLEWARE
 
 // Generate unique claim number
-ClaimSchema.pre('save', async function(next) {
+ClaimSchema.pre('save', async function() {
   if (this.isNew && !this.claimNumber) {
     const year = new Date().getFullYear();
-    const count = await this.constructor.countDocuments();
-    this.claimNumber = `AVA-CLM-${year}-${String(count + 1).padStart(6, '0')}`;
+    const uniquePart = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-9);
+    this.claimNumber = `AVA-CLM-${year}-${uniquePart}`;
   }
-  
+
   this.lastUpdatedAt = Date.now();
-  next();
 });
 
 // INSTANCE METHODS

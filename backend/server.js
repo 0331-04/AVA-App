@@ -2,6 +2,13 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const mongoose = require('mongoose');
+
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log("MongoDB error:", err));
+
+
 const app = express();
 
 // Middleware
@@ -9,19 +16,17 @@ app.use(cors());
 app.use(express.json());
 
 
-const userRoutes = require('./routes/users');
-const claimRoutes = require('./routes/claims');
+const authRoutes = require('./authentication/authRoute');
+const claimRoutes = require('./claims/claimRoutes');
 
 
-const qualityRoutes = require('./routes/quality_routes');
-const damageRoutes = require('./routes/damage_routes');
+const userProfileRoutes = require('./userprofile/userRoute');
 
-app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userProfileRoutes);
 app.use('/api/claims', claimRoutes);
 
 
-app.use('/api/quality', qualityRoutes);
-app.use('/api/damage', damageRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3000;
