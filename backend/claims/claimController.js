@@ -675,4 +675,29 @@ exports.getClaimStatistics = async (req, res) => {
   }
 };
 
-module.exports = exports;
+// Delete a claim by ID
+const deleteClaim = async (req, res) => {
+  try {
+    const claimId = req.params.id;
+    
+    // Tell Mongoose to find this specific claim and destroy it
+    const deletedClaim = await Claim.findByIdAndDelete(claimId);
+
+    if (!deletedClaim) {
+      return res.status(404).json({ success: false, message: "Claim not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Claim permanently deleted!" });
+  } catch (error) {
+    console.error("Error deleting claim:", error);
+    res.status(500).json({ success: false, message: "Server error during deletion" });
+  }
+};
+
+// Export all controller functions
+module.exports = {
+  submitClaim,
+  getClaim, 
+  deleteClaim 
+};
+
