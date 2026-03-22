@@ -1,0 +1,13 @@
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN mkdir -p src/config
+USER node
+EXPOSE 3002
+CMD ["node", "server.js"]
