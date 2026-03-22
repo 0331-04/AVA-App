@@ -1,0 +1,652 @@
+name: AVA Backend — CI/CD
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      run_ai_analysis:
+        description: 'Force run ai-analysis?'
+        type: boolean
+        default: false
+      run_authentication:
+        description: 'Force run authentication?'
+        type: boolean
+        default: false
+      run_backend_claims:
+        description: 'Force run backend-claims?'
+        type: boolean
+        default: false
+      run_backend_notifications:
+        description: 'Force run backend-notifications?'
+        type: boolean
+        default: false
+      run_claims:
+        description: 'Force run claims?'
+        type: boolean
+        default: false
+      run_cost_estimation:
+        description: 'Force run cost-estimation?'
+        type: boolean
+        default: false
+      run_damage_detection:
+        description: 'Force run damage-detection-service?'
+        type: boolean
+        default: false
+      run_quality_service:
+        description: 'Force run quality-service?'
+        type: boolean
+        default: false
+
+jobs:
+
+  # JOB 0 — Poll main for changes
+  # Reads last saved SHAs from cache, fetches current SHAs from GitHub API,
+  # sets changed=true/false per module. Does NOT save SHAs here —
+  # each module saves its own SHA only after a successful build.
+
+  poll:
+    name: 🔍 Poll main for changes
+    runs-on: ubuntu-latest
+    outputs:
+      ai_analysis:           ${{ steps.compare.outputs.ai_analysis }}
+      ai_analysis_sha:       ${{ steps.fetch.outputs.ai_analysis }}
+      authentication:        ${{ steps.compare.outputs.authentication }}
+      authentication_sha:    ${{ steps.fetch.outputs.authentication }}
+      backend_claims:        ${{ steps.compare.outputs.backend_claims }}
+      backend_claims_sha:    ${{ steps.fetch.outputs.backend_claims }}
+      backend_notifications: ${{ steps.compare.outputs.backend_notifications }}
+      backend_notifications_sha: ${{ steps.fetch.outputs.backend_notifications }}
+      claims:                ${{ steps.compare.outputs.claims }}
+      claims_sha:            ${{ steps.fetch.outputs.claims }}
+      cost_estimation:       ${{ steps.compare.outputs.cost_estimation }}
+      cost_estimation_sha:   ${{ steps.fetch.outputs.cost_estimation }}
+      damage_detection:      ${{ steps.compare.outputs.damage_detection }}
+      damage_detection_sha:  ${{ steps.fetch.outputs.damage_detection }}
+      quality_service:       ${{ steps.compare.outputs.quality_service }}
+      quality_service_sha:   ${{ steps.fetch.outputs.quality_service }}
+
+    steps:
+      - name: Restore last known SHAs from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .last-shas
+          key: last-shas-never-matches
+          restore-keys: |
+            last-shas-ai_analysis-
+            last-shas-authentication-
+            last-shas-backend_claims-
+            last-shas-backend_notifications-
+            last-shas-claims-
+            last-shas-cost_estimation-
+            last-shas-damage_detection-
+            last-shas-quality_service-
+
+      - name: Fetch current SHA per folder from main
+        id: fetch
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          get_sha() {
+            curl -s \
+              -H "Authorization: Bearer $GH_PAT" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/commits?path=$1&sha=main&per_page=1" \
+              | jq -r '.[0].sha // "none"'
+          }
+          echo "ai_analysis=$(get_sha ai-analysis)"                       >> $GITHUB_OUTPUT
+          echo "authentication=$(get_sha authentication)"                 >> $GITHUB_OUTPUT
+          echo "backend_claims=$(get_sha backend-claims)"                 >> $GITHUB_OUTPUT
+          echo "backend_notifications=$(get_sha backend-notifications)"   >> $GITHUB_OUTPUT
+          echo "claims=$(get_sha claims)"                                  >> $GITHUB_OUTPUT
+          echo "cost_estimation=$(get_sha cost-estimation)"               >> $GITHUB_OUTPUT
+          echo "damage_detection=$(get_sha damage-detection-service)"     >> $GITHUB_OUTPUT
+          echo "quality_service=$(get_sha quality-service)"               >> $GITHUB_OUTPUT
+
+      - name: Compare against cached SHAs
+        id: compare
+        run: |
+          mkdir -p .last-shas
+          read_cache() { cat ".last-shas/$1" 2>/dev/null || echo ""; }
+          check() {
+            local new=$2 old=$(read_cache "$1")
+            if [ "$new" != "$old" ] && [ "$new" != "none" ]; then
+              echo "  ↳ $1 CHANGED ($old → $new)"
+              echo "$1=true"  >> $GITHUB_OUTPUT
+            else
+              echo "  ↳ $1 unchanged"
+              echo "$1=false" >> $GITHUB_OUTPUT
+            fi
+          }
+          echo "Checking for changes on main..."
+          check "ai_analysis"           "${{ steps.fetch.outputs.ai_analysis }}"
+          check "authentication"        "${{ steps.fetch.outputs.authentication }}"
+          check "backend_claims"        "${{ steps.fetch.outputs.backend_claims }}"
+          check "backend_notifications" "${{ steps.fetch.outputs.backend_notifications }}"
+          check "claims"                "${{ steps.fetch.outputs.claims }}"
+          check "cost_estimation"       "${{ steps.fetch.outputs.cost_estimation }}"
+          check "damage_detection"      "${{ steps.fetch.outputs.damage_detection }}"
+          check "quality_service"       "${{ steps.fetch.outputs.quality_service }}"
+
+
+
+  # MODULE 1 - ai-analysis  (Python Flask | port 5000)
+
+  ai-analysis:
+    name: 🤖 ai-analysis — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.ai_analysis == 'true' || github.event.inputs.run_ai_analysis == 'true'
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+
+      - name: Copy Dockerfile into backend folder
+        run: cp cicd/dockerfiles/ai-analysis/Dockerfile main/ai-analysis/Dockerfile
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: main/ai-analysis/requirements.txt
+
+      - name: Install dependencies
+        working-directory: main/ai-analysis
+        run: pip install -r requirements.txt
+
+      - name: Lint with flake8
+        working-directory: main/ai-analysis
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run tests
+        working-directory: main/ai-analysis
+        env:
+          FLASK_ENV: testing
+        run: pip install pytest && pytest tests/ -v --tb=short
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Download model weights
+        run: |
+          mkdir -p main/ai-analysis/models
+          curl -L "${{ secrets.MODEL_WEIGHTS_URL }}" -o main/ai-analysis/models/model.pt
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/ai-analysis
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-ai-analysis:latest
+
+      # ✅ Only save SHA after successful build — failed builds retry next poll
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-ai_analysis-${{ needs.poll.outputs.ai_analysis_sha }}
+
+  # ai-analysis-deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: ai-analysis
+  #   steps:
+  #     - uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.SERVER_HOST }}
+  #         username: ${{ secrets.SERVER_USER }}
+  #         key: ${{ secrets.SERVER_SSH_KEY }}
+  #         script: |
+  #           docker pull ${{ secrets.DOCKER_USERNAME }}/ava-ai-analysis:latest
+  #           docker stop ava-ai-analysis 2>/dev/null || true
+  #           docker rm   ava-ai-analysis 2>/dev/null || true
+  #           docker run -d --name ava-ai-analysis --restart unless-stopped \
+  #             -p 5000:5000 -e FLASK_ENV=production --memory="1g" \
+  #             ${{ secrets.DOCKER_USERNAME }}/ava-ai-analysis:latest
+
+
+  # MODULE 2 — authentication  (Node.js | port 3000)
+  authentication:
+    name: 🔐 authentication — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.authentication == 'true' || github.event.inputs.run_authentication == 'true'
+    services:
+      mongodb:
+        image: mongo:6
+        ports: [27017:27017]
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+
+      - name: Copy Dockerfile
+        run: cp cicd/dockerfiles/authentication/Dockerfile main/authentication/Dockerfile
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main/authentication/package-lock.json
+
+      - name: Install dependencies
+        working-directory: main/authentication
+        run: npm ci
+
+      - name: Run tests
+        working-directory: main/authentication
+        env:
+          NODE_ENV: test
+          PORT: 3000
+          MONGODB_URI: mongodb://localhost:27017/ava-auth-test
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: 7d
+        run: npm test
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/authentication
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-authentication:latest
+
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-authentication-${{ needs.poll.outputs.authentication_sha }}
+
+  # authentication-deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: authentication
+  #   steps:
+  #     - uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.SERVER_HOST }}
+  #         username: ${{ secrets.SERVER_USER }}
+  #         key: ${{ secrets.SERVER_SSH_KEY }}
+  #         script: |
+  #           docker pull ${{ secrets.DOCKER_USERNAME }}/ava-authentication:latest
+  #           docker stop ava-authentication 2>/dev/null || true
+  #           docker rm   ava-authentication 2>/dev/null || true
+  #           docker run -d --name ava-authentication --restart unless-stopped \
+  #             -p 3000:3000 -e PORT=3000 \
+  #             -e MONGODB_URI="${{ secrets.MONGODB_URI_AUTH }}" \
+  #             -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+  #             -e JWT_EXPIRES_IN="7d" \
+  #             ${{ secrets.DOCKER_USERNAME }}/ava-authentication:latest
+
+
+  # MODULE 3 — backend-claims  (Node.js | port 3001)
+
+  backend-claims:
+    name: 📋 backend-claims — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.backend_claims == 'true' || github.event.inputs.run_backend_claims == 'true'
+    services:
+      mongodb:
+        image: mongo:6
+        ports: [27017:27017]
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+      - name: Copy Dockerfile
+        run: cp cicd/dockerfiles/backend-claims/Dockerfile main/backend-claims/Dockerfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main/backend-claims/package-lock.json
+      - name: Install dependencies
+        working-directory: main/backend-claims
+        run: npm ci
+      - name: Run tests
+        working-directory: main/backend-claims
+        env:
+          NODE_ENV: test
+          PORT: 3001
+          MONGODB_URI: mongodb://localhost:27017/ava-claims-test
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          DAMAGE_DETECTION_API: http://localhost:5000/analyze
+        run: npm test
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/backend-claims
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-backend-claims:latest
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-backend_claims-${{ needs.poll.outputs.backend_claims_sha }}
+  # backend-claims-deploy: (uncomment when server ready)
+
+
+
+  # MODULE 4 — backend-notifications  (Node.js | port 3002)
+
+  backend-notifications:
+    name: 🔔 backend-notifications — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.backend_notifications == 'true' || github.event.inputs.run_backend_notifications == 'true'
+    services:
+      mongodb:
+        image: mongo:6
+        ports: [27017:27017]
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+      - name: Copy Dockerfile
+        run: cp cicd/dockerfiles/backend-notifications/Dockerfile main/backend-notifications/Dockerfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main/backend-notifications/package-lock.json
+      - name: Install dependencies
+        working-directory: main/backend-notifications
+        run: npm ci
+      - name: Write Firebase service account
+        working-directory: main/backend-notifications
+        run: |
+          mkdir -p src/config
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > src/config/firebase-service-account.json
+      - name: Run tests
+        working-directory: main/backend-notifications
+        env:
+          NODE_ENV: test
+          PORT: 3002
+          MONGODB_URI: mongodb://localhost:27017/ava-notifications-test
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: npm test
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/backend-notifications
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-backend-notifications:latest
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-backend_notifications-${{ needs.poll.outputs.backend_notifications_sha }}
+  # backend-notifications-deploy: (uncomment when server ready)
+
+
+
+  # MODULE 5 — claims  (Node.js | port 3003)
+
+  claims:
+    name: 📄 claims — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.claims == 'true' || github.event.inputs.run_claims == 'true'
+    services:
+      mongodb:
+        image: mongo:6
+        ports: [27017:27017]
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+      - name: Copy Dockerfile
+        run: cp cicd/dockerfiles/claims/Dockerfile main/claims/Dockerfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main/claims/package-lock.json
+      - name: Install dependencies
+        working-directory: main/claims
+        run: npm ci
+      - name: Run tests
+        working-directory: main/claims
+        env:
+          NODE_ENV: test
+          PORT: 3003
+          MONGODB_URI: mongodb://localhost:27017/ava-claims2-test
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: npm test
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/claims
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-claims:latest
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-claims-${{ needs.poll.outputs.claims_sha }}
+  # claims-deploy: (uncomment when server ready)
+
+
+  # MODULE 6 — cost-estimation  (Python Flask | port 5001)
+
+  cost-estimation:
+    name: 💰 cost-estimation — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.cost_estimation == 'true' || github.event.inputs.run_cost_estimation == 'true'
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+      - name: Copy Dockerfile
+        run: cp cicd/dockerfiles/cost-estimation/Dockerfile main/cost-estimation/Dockerfile
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: main/cost-estimation/requirements.txt
+      - name: Install dependencies
+        working-directory: main/cost-estimation
+        run: pip install -r requirements.txt
+      - name: Lint with flake8
+        working-directory: main/cost-estimation
+        run: pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Run tests
+        working-directory: main/cost-estimation
+        env:
+          FLASK_ENV: testing
+        run: pip install pytest && pytest tests/ -v --tb=short
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/cost-estimation
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-cost-estimation:latest
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-cost_estimation-${{ needs.poll.outputs.cost_estimation_sha }}
+  # cost-estimation-deploy: (uncomment when server ready)
+
+
+
+  # MODULE 7 — damage-detection-service  (Python Flask | port 5002)
+
+  damage-detection-service:
+    name: 🔬 damage-detection-service — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.damage_detection == 'true' || github.event.inputs.run_damage_detection == 'true'
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+      - name: Copy Dockerfile
+        run: cp cicd/dockerfiles/damage-detection-service/Dockerfile main/damage-detection-service/Dockerfile
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: main/damage-detection-service/requirements.txt
+      - name: Install dependencies
+        working-directory: main/damage-detection-service
+        run: pip install -r requirements.txt
+      - name: Lint with flake8
+        working-directory: main/damage-detection-service
+        run: pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Run tests
+        working-directory: main/damage-detection-service
+        env:
+          FLASK_ENV: testing
+        run: pip install pytest && pytest tests/ -v --tb=short
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/damage-detection-service
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-damage-detection:latest
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-damage_detection-${{ needs.poll.outputs.damage_detection_sha }}
+  # damage-detection-service-deploy: (uncomment when server ready)
+
+
+
+  # MODULE 8 — quality-service  (Python Flask | port 5003)
+
+  quality-service:
+    name: ✅ quality-service — Test & Build
+    runs-on: ubuntu-latest
+    needs: poll
+    if: needs.poll.outputs.quality_service == 'true' || github.event.inputs.run_quality_service == 'true'
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - name: Checkout cicd branch (Dockerfiles)
+        uses: actions/checkout@v4
+        with:
+          ref: cicd
+          path: cicd
+      - name: Copy Dockerfile
+        run: cp cicd/dockerfiles/quality-service/Dockerfile main/quality-service/Dockerfile
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: main/quality-service/requirements.txt
+      - name: Install dependencies
+        working-directory: main/quality-service
+        run: pip install -r requirements.txt
+      - name: Lint with flake8
+        working-directory: main/quality-service
+        run: pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Run tests
+        working-directory: main/quality-service
+        env:
+          FLASK_ENV: testing
+        run: pip install pytest && pytest tests/ -v --tb=short
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main/quality-service
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/ava-quality-service:latest
+      - name: Save SHA to cache
+        uses: actions/cache/save@v4
+        with:
+          path: .last-shas
+          key: last-shas-quality_service-${{ needs.poll.outputs.quality_service_sha }}
+  # quality-service-deploy: (uncomment when server ready)
