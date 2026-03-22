@@ -95,14 +95,14 @@ jobs:
               "https://api.github.com/repos/$REPO/commits?path=$1&sha=main&per_page=1" \
               | jq -r '.[0].sha // "none"'
           }
-          echo "ai_analysis=$(get_sha ai-analysis)"                       >> $GITHUB_OUTPUT
-          echo "authentication=$(get_sha authentication)"                 >> $GITHUB_OUTPUT
-          echo "backend_claims=$(get_sha backend-claims)"                 >> $GITHUB_OUTPUT
-          echo "backend_notifications=$(get_sha backend-notifications)"   >> $GITHUB_OUTPUT
-          echo "claims=$(get_sha claims)"                                  >> $GITHUB_OUTPUT
-          echo "cost_estimation=$(get_sha cost-estimation)"               >> $GITHUB_OUTPUT
-          echo "damage_detection=$(get_sha damage-detection-service)"     >> $GITHUB_OUTPUT
-          echo "quality_service=$(get_sha quality-service)"               >> $GITHUB_OUTPUT
+          echo "ai_analysis=$(get_sha backend/ai-analysis)"                       >> $GITHUB_OUTPUT
+          echo "authentication=$(get_sha backend/authentication)"                 >> $GITHUB_OUTPUT
+          echo "backend_claims=$(get_sha backend/backend-claims)"                 >> $GITHUB_OUTPUT
+          echo "backend_notifications=$(get_sha backend/backend-notifications)"   >> $GITHUB_OUTPUT
+          echo "claims=$(get_sha backend/claims)"                                  >> $GITHUB_OUTPUT
+          echo "cost_estimation=$(get_sha backend/cost-estimation)"               >> $GITHUB_OUTPUT
+          echo "damage_detection=$(get_sha backend/damage-detection-service)"     >> $GITHUB_OUTPUT
+          echo "quality_service=$(get_sha backend/quality-service)"               >> $GITHUB_OUTPUT
 
       - name: Compare against cached SHAs
         id: compare
@@ -152,7 +152,7 @@ jobs:
           path: cicd
 
       - name: Copy Dockerfile into backend folder
-        run: cp cicd/dockerfiles/ai-analysis/Dockerfile main/ai-analysis/Dockerfile
+        run: cp cicd/dockerfiles/ai-analysis/Dockerfile main/backend/ai-analysis/Dockerfile
 
       - uses: actions/setup-python@v5
         with:
@@ -161,11 +161,11 @@ jobs:
           cache-dependency-path: main/ai-analysis/requirements.txt
 
       - name: Install dependencies
-        working-directory: main/ai-analysis
+        working-directory: main/backend/ai-analysis
         run: pip install -r requirements.txt
 
       - name: Lint with flake8
-        working-directory: main/ai-analysis
+        working-directory: main/backend/ai-analysis
         run: |
           pip install flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
