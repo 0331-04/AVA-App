@@ -272,7 +272,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./main/authentication
+          context: ./main/backend/authentication
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/ava-authentication:latest
 
@@ -418,7 +418,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./main/backend-notifications
+          context: ./main/backend/backend-notifications
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/ava-backend-notifications:latest
       - name: Save SHA to cache
