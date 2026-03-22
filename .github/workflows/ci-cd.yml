@@ -3,7 +3,7 @@ name: AVA Backend — CI/CD
 on:
   push:
     branches:
-      - cicd  # This tells GitHub to run it automatically when you push to this branch
+      - cicd  
   schedule:
     - cron: '*/10 * * * *'
   workflow_dispatch:
