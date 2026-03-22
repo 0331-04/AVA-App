@@ -1,3 +1,8 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #0f2027; /* 🔥 removes white edges */
+}
 /* Reset default browser spacing */
 * {
   box-sizing: border-box;
