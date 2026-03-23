@@ -348,145 +348,8 @@ class _Header extends StatelessWidget {
     required this.onNotificationTap,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: _DiagonalClipper(),
-      child: Container(
-        width: double.infinity,
-        height: 215,
-        color: const Color(0xFF1A56DB),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'AVA-Inspec',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(greetingIcon, color: Colors.white70, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            greeting,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
-                              fontSize: 13,
-                              fontFamily: 'WorkSans',
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        userName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontFamily: 'WorkSans',
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: onNotificationTap,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.notifications_outlined,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          if (unreadNotifications > 0)
-                            Positioned(
-                              top: -2,
-                              right: -2,
-                              child: Container(
-                                width: 16,
-                                height: 16,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '$unreadNotifications',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const CircleAvatar(
-                      radius: 26,
-                      backgroundImage: NetworkImage(
-                        'https://i.pravatar.cc/150?img=12',
-                      ),
-                      backgroundColor: Colors.white24,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+ @override Widget build(BuildContext context) { return ClipPath( clipper: _DiagonalClipper(), child: Container( width: double.infinity, height: 215, color: const Color(0xFF1A56DB), child: SafeArea( bottom: false, child: Padding( padding: const EdgeInsets.fromLTRB(24, 12, 24, 0), child: Row( crossAxisAlignment: CrossAxisAlignment.start, children: [ Expanded( child: Column( crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [ const Text( 'AVA-Inspec', style: TextStyle( color: Colors.white, fontSize: 26, fontFamily: 'Poppins', fontWeight: FontWeight.w700, height: 1.1, ), ), const SizedBox(height: 8), Row( children: [ Icon(greetingIcon, color: Colors.white70, size: 14), const SizedBox(width: 4), Text( greeting, style: TextStyle( color: Colors.white.withOpacity(0.85), fontSize: 13, fontFamily: 'WorkSans', fontWeight: FontWeight.w400, ), ), ], ), Text( userName, style: const TextStyle( color: Colors.white, fontSize: 17, fontFamily: 'WorkSans', fontWeight: FontWeight.w700, ), ), ], ), ), Column( mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [ GestureDetector( onTap: onNotificationTap, child: Stack( clipBehavior: Clip.none, children: [ Container( width: 36, height: 36, decoration: BoxDecoration( color: Colors.white.withOpacity(0.15), shape: BoxShape.circle, ), child: const Icon( Icons.notifications_outlined, color: Colors.white, size: 20, ), ), if (unreadNotifications > 0) Positioned( top: -2, right: -2, child: Container( width: 16, height: 16, decoration: const BoxDecoration( color: Colors.red, shape: BoxShape.circle, ), child: Center( child: Text( '$unreadNotifications', style: const TextStyle( color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700, ), ), ), ), ), ], ), ), const SizedBox(height: 8), const CircleAvatar( radius: 26, backgroundImage: NetworkImage( 'https://i.pravatar.cc/150?img=12', ), backgroundColor: Colors.white24, ), ], ), ], ), ), ), ), ); } }
 
-class _DiagonalClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 40);
-    path.lineTo(size.width, size.height);
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(_DiagonalClipper old) => false;
-}
 
 // ----------------------------------------------------------
 // ACTIVE CLAIM BANNER
@@ -1608,4 +1471,19 @@ class _NavItemCenter extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DiagonalClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 30);
+    path.lineTo(size.width, size.height);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
