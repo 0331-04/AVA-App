@@ -1,3 +1,7 @@
+# Version: 1.0.1
+# Last Updated: 2026-03-30
+
+
 from flask import Flask, request, jsonify
 from ultralytics import YOLO
 import cv2
