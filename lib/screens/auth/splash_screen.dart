@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
+import 'auth_screen.dart';
 
 
 class SplashScreen extends StatefulWidget {
@@ -98,20 +100,32 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 2400));
     if (!mounted) return;
 
-    // ── First-launch check 
-    // TODO: Add shared_preferences to pubspec.yaml, then replace with:
-
+        final prefs = await SharedPreferences.getInstance();
+    bool accepted = prefs.getBool('accepted_terms') ?? false;
 
     final navigator = Navigator.of(context);
-    navigator.pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const OnboardingScreen(),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 600),
-      ),
-    );
+
+    if (accepted) {
+      navigator.pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const AuthScreen(),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
+    } else {
+      navigator.pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const OnboardingScreen(),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
+    }
   }
 
   @override

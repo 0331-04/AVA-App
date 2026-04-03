@@ -203,6 +203,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
               setState(() => _unreadNotifications = 0);
             },
+                        onProfileTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProfileScreen(
+                    accessToken: widget.accessToken,
+                  ),
+                ),
+              );
+            },
           ),
           Expanded(
             child: RefreshIndicator(
@@ -339,6 +349,7 @@ class _Header extends StatelessWidget {
   final String userName;
   final int unreadNotifications;
   final VoidCallback onNotificationTap;
+  final VoidCallback onProfileTap;
 
   const _Header({
     required this.greeting,
@@ -346,10 +357,144 @@ class _Header extends StatelessWidget {
     required this.userName,
     required this.unreadNotifications,
     required this.onNotificationTap,
+    required this.onProfileTap,
   });
 
- @override Widget build(BuildContext context) { return ClipPath( clipper: _DiagonalClipper(), child: Container( width: double.infinity, height: 215, color: const Color(0xFF1A56DB), child: SafeArea( bottom: false, child: Padding( padding: const EdgeInsets.fromLTRB(24, 12, 24, 0), child: Row( crossAxisAlignment: CrossAxisAlignment.start, children: [ Expanded( child: Column( crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [ const Text( 'AVA-Inspec', style: TextStyle( color: Colors.white, fontSize: 26, fontFamily: 'Poppins', fontWeight: FontWeight.w700, height: 1.1, ), ), const SizedBox(height: 8), Row( children: [ Icon(greetingIcon, color: Colors.white70, size: 14), const SizedBox(width: 4), Text( greeting, style: TextStyle( color: Colors.white.withOpacity(0.85), fontSize: 13, fontFamily: 'WorkSans', fontWeight: FontWeight.w400, ), ), ], ), Text( userName, style: const TextStyle( color: Colors.white, fontSize: 17, fontFamily: 'WorkSans', fontWeight: FontWeight.w700, ), ), ], ), ), Column( mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [ GestureDetector( onTap: onNotificationTap, child: Stack( clipBehavior: Clip.none, children: [ Container( width: 36, height: 36, decoration: BoxDecoration( color: Colors.white.withOpacity(0.15), shape: BoxShape.circle, ), child: const Icon( Icons.notifications_outlined, color: Colors.white, size: 20, ), ), if (unreadNotifications > 0) Positioned( top: -2, right: -2, child: Container( width: 16, height: 16, decoration: const BoxDecoration( color: Colors.red, shape: BoxShape.circle, ), child: Center( child: Text( '$unreadNotifications', style: const TextStyle( color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700, ), ), ), ), ), ], ), ), const SizedBox(height: 8), const CircleAvatar( radius: 26, backgroundImage: NetworkImage( 'https://i.pravatar.cc/150?img=12', ), backgroundColor: Colors.white24, ), ], ), ], ), ), ), ), ); } }
+ @override
+Widget build(BuildContext context) {
+  return ClipPath(
+    clipper: _DiagonalClipper(),
+    child: Container(
+      width: double.infinity,
+      height: 215,
+      color: const Color(0xFF1A56DB),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // LEFT SIDE (TEXT)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'AVA-Inspec',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(greetingIcon,
+                            color: Colors.white70, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          greeting,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 13,
+                            fontFamily: 'WorkSans',
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontFamily: 'WorkSans',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
+              // RIGHT SIDE (NOTIFICATIONS + PROFILE)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // 🔔 Notifications
+                  GestureDetector(
+                    onTap: onNotificationTap,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        if (unreadNotifications > 0)
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$unreadNotifications',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 👤 PROFILE (FIX APPLIED HERE)
+                  GestureDetector(
+                    onTap: onProfileTap,
+                    child: const CircleAvatar(
+                      radius: 26,
+                      backgroundImage: NetworkImage(
+                        'https://i.pravatar.cc/150?img=12',
+                      ),
+                      backgroundColor: Colors.white24,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+}
 
 // ----------------------------------------------------------
 // ACTIVE CLAIM BANNER
@@ -914,34 +1059,173 @@ class _ClaimSelector extends StatelessWidget {
 class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      decoration: ShapeDecoration(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Color(0xFF978B8B)),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        shadows: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 6,
-            offset: Offset(0, 3),
+    return GestureDetector(
+            onTap: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (_) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 48,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: const [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Color(0xFFEAF2FF),
+                        child: Icon(
+                          Icons.miscellaneous_services,
+                          color: Color(0xFF004AAD),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Available Services',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF171725),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  const _ServiceTile(
+                    icon: Icons.car_repair_outlined,
+                    title: 'Roadside Assistance',
+                    subtitle: 'Quick support after an accident',
+                  ),
+                  const _ServiceTile(
+                    icon: Icons.local_shipping_outlined,
+                    title: 'Towing Service',
+                    subtitle: 'Vehicle transport to a repair center',
+                  ),
+                  const _ServiceTile(
+                    icon: Icons.build_outlined,
+                    title: 'Nearby Repair Shops',
+                    subtitle: 'Repair guidance and next-step support',
+                  ),
+                  const _ServiceTile(
+                    icon: Icons.support_agent_outlined,
+                    title: 'Emergency Support',
+                    subtitle: 'Help and claim-related assistance',
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+        );
+      },
+      child: Container(
+        height: 50,
+        decoration: ShapeDecoration(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(color: Color(0xFF978B8B)),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              'Search services',
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.45),
+                fontSize: 15,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ServiceTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _ServiceTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F9FC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE6ECF5)),
       ),
       child: Row(
         children: [
-          const SizedBox(width: 16),
-          Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-          const SizedBox(width: 10),
-          Text(
-            'Search services',
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.45),
-              fontSize: 15,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w300,
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: const Color(0xFFEAF2FF),
+            child: Icon(icon, color: const Color(0xFF004AAD), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Color(0xFF171725),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1315,7 +1599,75 @@ class _TipsTiles extends StatelessWidget {
           child: _TipCard(
             icon: Icons.camera_alt_outlined,
             text: 'How to take the perfect damage photo',
-            onTap: () {},
+                        onTap: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (_) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 48,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: const [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Color(0xFFEAF2FF),
+                              child: Icon(
+                                Icons.camera_alt_outlined,
+                                color: Color(0xFF004AAD),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Perfect Damage Photo Tips',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF171725),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        const _InfoBullet(
+                          text: 'Use bright lighting for clearer damage detection',
+                        ),
+                        const _InfoBullet(
+                          text: 'Capture the damaged area as closely as possible',
+                        ),
+                        const _InfoBullet(
+                          text: 'Avoid blurry or tilted photos',
+                        ),
+                        const _InfoBullet(
+                          text: 'Include only one vehicle in the frame',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 12),
@@ -1323,10 +1675,111 @@ class _TipsTiles extends StatelessWidget {
           child: _TipCard(
             icon: Icons.tips_and_updates_outlined,
             text: 'New AI: engine update for scratch detection',
-            onTap: () {},
+                        onTap: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (_) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 48,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: const [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Color(0xFFEAF2FF),
+                              child: Icon(
+                                Icons.tips_and_updates_outlined,
+                                color: Color(0xFF004AAD),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'AI Update',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF171725),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        const _InfoBullet(
+                          text: 'The latest model improves preliminary scratch and surface damage detection.',
+                        ),
+                        const _InfoBullet(
+                          text: 'AI results are still preliminary and may change after professional review.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],
+    );
+  }
+}
+
+class _InfoBullet extends StatelessWidget {
+  final String text;
+
+  const _InfoBullet({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Color(0xFF004AAD),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                height: 1.5,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

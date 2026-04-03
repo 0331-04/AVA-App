@@ -739,7 +739,62 @@ class _InsurancePolicyCard extends StatelessWidget {
           _PolicyRow(label: 'Coverage', value: 'As per insurer'),
           const SizedBox(height: 8),
           GestureDetector(
-            onTap: () {},
+                        onTap: () {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                  contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  title: Row(
+                    children: const [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Color(0xFFEAF2FF),
+                        child: Icon(
+                          Icons.shield_outlined,
+                          color: Color(0xFF004AAD),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'No Active Policy',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: const Text(
+                    'You currently do not have a linked insurance policy in your AVA-Inspec account.',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          color: Color(0xFF004AAD),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -903,7 +958,104 @@ class _AccountActionsCard extends StatelessWidget {
         _TapRow(
           icon: Icons.privacy_tip_outlined,
           label: 'Privacy Policy',
-          onTap: () {},
+                   onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(
+                    title: const Text(
+                      'Privacy Policy',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    backgroundColor: const Color(0xFF004AAD),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
+                  backgroundColor: const Color(0xFFF5F7FB),
+                  body: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x14000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Color(0xFFEAF2FF),
+                                child: Icon(
+                                  Icons.privacy_tip_outlined,
+                                  color: Color(0xFF004AAD),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Your Data & AVA-Inspec',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                    color: Color(0xFF171725),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'AVA-Inspec collects and processes user data to support claim reporting, AI-based preliminary assessment, and user account functionality.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              height: 1.6,
+                              color: Color(0xFF44444F),
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Uploaded images, claim details, and profile information are used only for claim-related workflows and service improvement within the application.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              height: 1.6,
+                              color: Color(0xFF44444F),
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'This app provides AI-assisted preliminary outputs, which may later be reviewed and updated during professional claim assessment.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              height: 1.6,
+                              color: Color(0xFF44444F),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
         const Divider(height: 16),
         _TapRow(
@@ -961,10 +1113,10 @@ class _AccountActionsCard extends StatelessWidget {
             onPressed: () {
               Navigator.of(ctx).pop();
               Navigator.of(ctx).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const TermsScreen()),
-                (route) => false,
-              );
-            },
+                 MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  (route) => false,
+                  );  
+                },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,
               shape: RoundedRectangleBorder(
