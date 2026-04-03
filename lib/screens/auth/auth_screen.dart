@@ -559,59 +559,6 @@ class _LoginFormState extends State<_LoginForm> {
             ),
             const SizedBox(height: 24),
 
-            // ── OR divider ────────────────────────────────
-            Row(
-              children: [
-                Expanded(
-                  child: Divider(color: const Color(0xFFE4E6EC), thickness: 1),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'or',
-                    style: TextStyle(
-                      color: Color(0xFF9699B7),
-                      fontSize: 14,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Divider(color: const Color(0xFFE4E6EC), thickness: 1),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Google sign-in button
-            // TODO: have to Connect Google Sign-In SDK
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFE0E2E9), width: 1.6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                icon: const Icon(Icons.g_mobiledata_rounded,
-                    color: Color(0xFFEA4335), size: 26),
-                label: const Text(
-                  'Continue with Google',
-                  style: TextStyle(
-                    color: Color(0xFF171725),
-                    fontSize: 14,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-
             // Sign up redirect
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'auth_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class OnboardingScreen extends StatefulWidget {
@@ -45,11 +46,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _goToTerms() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const TermsScreen()),
-    );
-  }
+  void _goToTerms() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('accepted_terms', true);
+
+  Navigator.of(context).pushReplacement(
+    MaterialPageRoute(builder: (_) => const TermsScreen()),
+  );
+}
 
   @override
   void dispose() {
