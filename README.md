@@ -35,6 +35,17 @@ Mobile App (Flutter) → Backend Server (Node.js / Express) → ML API (Flask + 
 
 ---
 
+## Features
+
+- Upload or capture vehicle images via mobile app  
+- AI-powered damage detection using YOLOv8  
+- Automatic classification of damage types  
+- Damage percentage estimation  
+- Claim tracking system for users  
+- Fast API response for real-time analysis  
+
+---
+
 ##  Running the ML API
 
 bash
@@ -61,17 +72,3 @@ Example JSON Response:
 
 
 
-<!-- # A new Flutter project.
-
-# ## Getting Started
-
-# This project is a starting point for a Flutter application.
-
-# A few resources to get you started if this is your first Flutter project:
-
-# - [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-# - [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-# For help getting started with Flutter development, view the
-# [online documentation](https://docs.flutter.dev/), which offers tutorials,
-# samples, guidance on mobile development, and a full API reference. -->
