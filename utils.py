@@ -1,0 +1,1 @@
+# Utility functions for AVA system (future use)
