@@ -36,9 +36,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # ----------------------------
 # API Endpoint: /analyze
 # ----------------------------
-# Method: POST
-# Input: image file (form-data)
-# Output: damage percentage + damage counts
 @app.route("/analyze", methods=["POST"])
 def analyze():
 
