@@ -21,14 +21,12 @@ BOX_SHRINK_FACTOR = 0.35    # Correction factor to reduce YOLO box overestimatio
 # ----------------------------
 # Load trained YOLOv8 model
 # ----------------------------
-# The model should be previously trained on vehicle damage dataset
 model = YOLO("ML_model.yolov8/runs/detect/train2/weights/best.pt")
 
 
 # ----------------------------
 # Define input image path
 # ----------------------------
-# Replace with your test image path if needed
 image_path = "ML_model.yolov8/valid/images/49_jpeg.rf.c3c53cb427a4a3bd3c3842af3eded488.jpg"
 
 
@@ -60,7 +58,6 @@ car_area = image_area * CAR_RATIO
 # ----------------------------
 # Run YOLO prediction
 # ----------------------------
-# Model returns detection results including bounding boxes
 results = model(image)
 result = results[0]  # Get first result (single image)
 
@@ -71,7 +68,6 @@ damage_area = 0
 # ----------------------------
 # Process detected bounding boxes
 # ----------------------------
-# Each box represents a detected damage region
 if result.boxes is not None and len(result.boxes) > 0:
 
     for box in result.boxes.xyxy.cpu().numpy():
@@ -104,7 +100,6 @@ else:
 # ----------------------------
 # Calculate damage percentage
 # ----------------------------
-# Compare total damage area with estimated car area
 if car_area > 0:
     damage_percent = (damage_area / car_area) * 100
 else:
@@ -114,7 +109,6 @@ else:
 # ----------------------------
 # Apply upper cap to avoid unrealistic outputs
 # ----------------------------
-# Helps stabilize results in case of detection errors
 damage_percent = min(damage_percent, 60)
 
 
